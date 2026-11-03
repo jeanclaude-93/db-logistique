@@ -41,9 +41,30 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 dialog label{display:block;font-size:12px;color:var(--mu);margin-bottom:8px}dialog label input,dialog label select{display:block;width:100%;margin-top:3px;color:var(--tx)}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-height:60vh;overflow:auto}
 dialog textarea{width:100%;height:240px;font:12px monospace}
+:root{--ac:#2563eb;--rad:12px;--sh:0 1px 2px rgba(16,24,40,.06),0 6px 18px rgba(16,24,40,.07)}
+body{font-family:"Segoe UI",Inter,Arial,sans-serif}
+nav{width:252px;background:linear-gradient(185deg,#0b1f3a,#14407a);color:#dfe8fa;border:0;padding:16px 10px}
+nav h1{color:#fff;font-size:18px;margin:2px 6px 10px}
+nav h4{color:#8fb4ec;margin:16px 6px 5px}
+nav button{color:#d5e1f7;padding:7px 10px;border-radius:8px;transition:.15s}
+nav button:hover{background:rgba(255,255,255,.12)}nav button.on{background:#2563eb;color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.45)}
+.me{background:rgba(255,255,255,.09);border-radius:10px;padding:9px 10px;margin:0 2px 10px}.me b{display:block;font-size:13px;color:#fff}.me small{display:block;color:#9fc0f2;margin-bottom:6px}.me div{display:flex;gap:6px}.me button{width:auto;font-size:12px;background:rgba(255,255,255,.14);padding:4px 8px}
+main{padding:22px 28px}h2{font-size:25px;letter-spacing:-.01em}
+.tw{border:0;border-radius:var(--rad);box-shadow:var(--sh)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:10px 12px}td{padding:8px 12px}
+tbody tr:nth-child(even){background:rgba(110,130,170,.07)}tbody tr:hover{background:rgba(37,99,235,.1)}
+.k{border:0;border-left:4px solid var(--ac);border-radius:var(--rad);box-shadow:var(--sh);padding:12px 14px}.k:nth-child(3n+2){border-left-color:#16a34a}.k:nth-child(3n){border-left-color:#f59e0b}.k b{font-size:23px}
+.btn{border-radius:8px;padding:7px 14px;box-shadow:0 1px 2px rgba(16,24,40,.08)}.btn:hover{filter:brightness(.96)}.btn.p{background:linear-gradient(135deg,#2563eb,#7c3aed);border:0}
+input:focus,select:focus{outline:2px solid var(--ac);outline-offset:0}
+.al{border:0;border-radius:var(--rad);box-shadow:var(--sh);padding:6px 16px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}.flow a{cursor:pointer;background:var(--sf);border-radius:20px;padding:6px 13px;font-size:12px;box-shadow:var(--sh)}.flow a:hover{background:var(--ac);color:#fff}.flow a:not(:last-child)::after{content:" →";color:var(--mu)}
+dialog{border:0;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+#lg{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(135deg,#0b1f3a,#2563eb 60%,#7c3aed)}#lg[hidden]{display:none}
+.lc{background:var(--sf);border-radius:18px;padding:28px;width:min(390px,100%);box-shadow:0 24px 70px rgba(0,0,0,.4)}.lc h1{margin:0 0 4px;font-size:22px}.lc label{display:block;font-size:12px;color:var(--mu);margin:12px 0}.lc input{display:block;width:100%;margin-top:4px;padding:9px 10px;color:var(--tx)}
+@media(max-width:760px){nav{width:auto}main{padding:14px}}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></head><body>
 <div class="app"><nav id="nav"></nav><main id="main"></main></div>
-<dialog id="dlg"></dialog><div id="dls"></div>
+<div id="lg" hidden></div><dialog id="dlg"></dialog><div id="dls"></div>
 <script>
 (()=>{
 const NOW=new Date(),YR=NOW.getFullYear(),KEY='logdb-v1';
@@ -76,6 +97,7 @@ const ech=r=>{if(!r.next)return'';const d=Math.round((new Date(r.next)-NOW)/864e
 /* ---- schéma : [clé, libellé, type(t|n|d|s|f|c), options|fn, décimales] ---- */
 const TB=[
 {id:'dash',g:'Pilotage',l:'Tableau de bord'},
+{id:'users',g:'Administration',l:'Utilisateurs & rôles'},
 {id:'req',g:'1. Besoin & achat',l:'Réquisitions (SR)',s:'Demande de Réquisition (SR)',c:[['sr','N° SR'],['date','Date','d'],['des','Désignation'],['code','Code actif / catégorie'],['u','Unité'],['qte','Qté','n'],['pu','P.U. estimé ($)','n'],['tot','Total ($)','c',r=>num(r.qte)*num(r.pu)],['just','Justification']],sum:['tot']},
 {id:'po',g:'1. Besoin & achat',l:'Bons de commande (PO)',s:'Bon de Commande (PO)',c:[['po','N° PO'],['four','Fournisseur'],['code','Code article'],['des','Désignation'],['u','Unité'],['qte','Qté','n'],['pu','P.U. ($)','n'],['tot','Total HT ($)','c',r=>num(r.qte)*num(r.pu)],['lig','Ligne budgétaire']],sum:['tot']},
 {id:'achats',g:'1. Besoin & achat',l:'Suivi des achats & budget',s:'Suivi des Achats, Tableau de Bord, Plan d’Achat',c:[['id','ID achat'],['des','Désignation'],['lieu','Lieu de livraison'],['qte','Qté','n'],['pub','P.U. budget ($)','n'],['pur','P.U. réel ($)','n'],['bud','Budget ($)','c',r=>num(r.qte)*num(r.pub)],['rel','Réel ($)','c',r=>num(r.qte)*num(r.pur)],['ec','Écart ($)','c',r=>num(r.qte)*(num(r.pur)-num(r.pub))],['statut','Statut','s',['Livré','En attente']]],sum:['bud','rel','ec']},
@@ -83,9 +105,9 @@ const TB=[
 {id:'articles',g:'3. Stockage',l:'Catalogue articles',s:'Produits, Gestion des Stocks, Plan d’Appro',c:[['ref','Référence'],['des','Désignation'],['u','Unité'],['cjm','Conso. jour moy.','n'],['dl','Délai livr. (j)','n'],['ss','Stock sécurité','n'],['pu','P.U. ($)','n'],['min','Stock min. (=CJM×délai+sécu.)','c',mini]]},
 {id:'mvt',g:'3. Stockage',l:'Mouvements de stock',s:'Gestion des Stocks (entrées/sorties)',c:[['date','Date','d'],['ref','Article','f','art'],['des','Désignation','c',(r,D)=>(D.articles.find(a=>a.ref===r.ref)||{}).des||''],['type','Mouvement','s',['Entrée','Sortie']],['qte','Qté','n']]},
 {id:'stock',g:'3. Stockage',l:'Stock & alertes',base:'articles',ro:1,s:'Inventaire du Stock, Stocks & Planification',c:[['ref','Réf.'],['des','Désignation'],['u','Unité'],['ent','Entrées','c',(r,D)=>mv(D,r.ref,'Entrée')],['sor','Sorties','c',(r,D)=>mv(D,r.ref,'Sortie')],['stk','Stock actuel','c',stk],['min','Stock min.','c',r=>mini(r)],['st','Statut','c',stat],['val','Valeur ($)','c',(r,D)=>stk(r,D)*num(r.pu)],['rea','Réappro. estimé','c',(r,D)=>stat(r,D)==='OK'?'':addDays(num(r.dl))]],sum:['val']},
-{id:'prod23',g:'3. Stockage',l:'Inventaire 2023 (Produits A–K)',s:'Inventaire du Stock (données 2023)',c:[['code','Code article'],['des','Désignation'],['min','Stock min','n'],['ini','Stock initial','n'],['pu','P.U. ($)','n'],['ent','Entrées','c',(r,D)=>m3(D,r.code,'Entrée')],['sor','Sorties','c',(r,D)=>m3(D,r.code,'Sortie')],['fin','Stock final','c',fin3],['val','Valeur ($)','c',(r,D)=>fin3(r,D)*num(r.pu)],['al','Alerte','c',(r,D)=>fin3(r,D)<=num(r.min)?'ALERTE':'Correct']],sum:['val']},
+{id:'prod23',g:'3. Stockage',l:'Inventaire 2023',s:'Inventaire du Stock (données 2023)',c:[['code','Code article'],['des','Désignation'],['min','Stock min','n'],['ini','Stock initial','n'],['pu','P.U. ($)','n'],['ent','Entrées','c',(r,D)=>m3(D,r.code,'Entrée')],['sor','Sorties','c',(r,D)=>m3(D,r.code,'Sortie')],['fin','Stock final','c',fin3],['val','Valeur ($)','c',(r,D)=>fin3(r,D)*num(r.pu)],['al','Alerte','c',(r,D)=>fin3(r,D)<=num(r.min)?'ALERTE':'Correct']],sum:['val']},
 {id:'mv23',g:'3. Stockage',l:'Mouvements 2023',s:'Entrées et Sorties (données 2023)',c:[['date','Date','d'],['code','Code article','f','p23'],['des','Désignation','c',(r,D)=>(D.prod23.find(a=>a.code===r.code)||{}).des||''],['type','Mouvement','s',['Entrée','Sortie']],['qte','Qté','n']]},
-{id:'seuils',g:'3. Stockage',l:'Seuils de stock (NRC Sud-Kivu)',s:'Gestion des Seuils de Stock',c:[['code','Code article'],['des','Désignation'],['u','Unité'],['min','Stock min. (alerte)','n'],['max','Stock max. (plafond)','n'],['qec','Écart (QEC)','c',r=>num(r.max)-num(r.min)]]},
+{id:'seuils',g:'3. Stockage',l:'Seuils de stock',s:'Gestion des Seuils de Stock',c:[['code','Code article'],['des','Désignation'],['u','Unité'],['min','Stock min. (alerte)','n'],['max','Stock max. (plafond)','n'],['qec','Écart (QEC)','c',r=>num(r.max)-num(r.min)]]},
 {id:'sorties',g:'4. Sortie des biens',l:'Sorties & expéditions',s:'Sortie Interne Base, Bordereau d’Expédition',c:[['type','Type','s',['Usage interne','Expédition']],['doc','N° document'],['date','Date','d'],['dest','Bénéficiaire / destination'],['ref','Réf. / ID actif'],['des','Désignation'],['qte','Qté sortie','n'],['recu','Qté reçue terrain','n'],['veh','Véhicule','f','veh'],['ec','Écart','c',r=>has(r.recu)?r.recu-num(r.qte):'']]},
 {id:'flotte',g:'5. Flotte, km & carburant',l:'État de la flotte',s:'1. État de la Flotte',c:[['code','Code'],['imm','Immatriculation'],['mod','Marque / modèle'],['typ','Type'],['an','Année','n'],['chs','N° châssis'],['acq','Acquisition','d'],['cout','Coût initial ($)','n'],['statut','Statut','s',['Disponible','En Mission','En Maintenance']],['next','Prochain entretien','d'],['chf','Chauffeur attitré','f','chf'],['ech','Échéance','c',ech]],sum:['cout']},
 {id:'trajets',g:'5. Flotte, km & carburant',l:'Trajets & kilométrage',s:'2. Suivi des Mouvements, Suivi Consommation, Registre Missions',c:[['date','Date','d'],['veh','Véhicule','f','veh'],['chf','Chauffeur','f','chf'],['trj','Trajet / destination'],['mot','Motif'],['eq','Équipage / passagers'],['hd','Départ'],['hr','Retour'],['kmd','Km départ','n'],['kmr','Km retour','n'],['km','Km parcourus','c',kmp],['pid','ID chauffeur (personnel)','c',(r,D)=>(pid(r.chf,D)||{}).id||''],['statut','Statut','s',['En cours','Terminé']]],sum:['km']},
@@ -123,21 +145,44 @@ TB.forEach(T=>{if(!T.c||T.base||db.t[T.id])return;db.t[T.id]=(SD[T.id]||[]).map(
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
 const rows=T=>db.t[T.base||T.id];
 const $=id=>document.getElementById(id);
+const ORD=['dash','req','po','achats','recep','articles','seuils','mvt','stock','prod23','mv23','sorties','flotte','trajets','carb','pannes','maint','pers','actifs','users'];
+const IC={'Pilotage':'📊','1. Besoin & achat':'🛒','2. Réception':'📥','3. Stockage':'🏬','4. Sortie des biens':'📤','5. Flotte, km & carburant':'🚚','6. Pannes & maintenance':'🔧','7. Personnel':'👥','8. Actifs':'🏢','Administration':'🔐'};
+const ROLES={super_admin:{l:'Super admin',p:{'*':'d'}},
+procurement:{l:'Procurement officer',p:{dash:'r',req:'d',po:'d',achats:'d',recep:'w',articles:'r',seuils:'r',stock:'r',sorties:'r',actifs:'r'}},
+supply:{l:'Supply chain assistant (achats & commandes)',p:{dash:'r',req:'w',po:'w',achats:'w',recep:'r',articles:'r',stock:'r'}},
+magasinier:{l:'Magasinier',p:{dash:'r',req:'r',po:'r',recep:'w',articles:'d',seuils:'w',mvt:'d',stock:'r',prod23:'w',mv23:'w',sorties:'w'}},
+assistant:{l:'Assistant logistique',p:{dash:'r',req:'w',po:'r',achats:'r',recep:'w',articles:'r',seuils:'r',mvt:'w',stock:'r',sorties:'w',flotte:'r',trajets:'w',carb:'w',pannes:'r',maint:'r',actifs:'r'}},
+fleet:{l:'Fleet officer (flotte)',p:{dash:'r',sorties:'r',flotte:'d',trajets:'d',carb:'d',pannes:'d',maint:'d',pers:'w',actifs:'r'}}};
+const LV={r:'lecture',w:'saisie',d:'saisie + suppression'};
+let me=null;const SU='niyomagugujc05@gmail.com';
+const SEEDU={email:SU,nom:'Jean-Claude Niyonsenga Magugu',role:'super_admin',salt:'lgsu-7f3a9c12',hash:'d4a0d455bb998ca8e946390e2bf17f4c71614216ccf94d823e174159b05d26e9'};
+const lv=id=>{const p=ROLES[me.role].p;return p['*']||p[id]||''};
+const can=(id,x)=>lv(id)!==''&&'rwd'.indexOf(x)<='rwd'.indexOf(lv(id));
+const vis=id=>id==='users'?me.role==='super_admin':lv(id)!=='';
+const hx=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+const hsh=async(pw,salt)=>{const te=new TextEncoder(),k=await crypto.subtle.importKey('raw',te.encode(pw),'PBKDF2',false,['deriveBits']);return hx(await crypto.subtle.deriveBits({name:'PBKDF2',salt:te.encode(salt),iterations:100000,hash:'SHA-256'},k,256))};
+const rnd=()=>hx(crypto.getRandomValues(new Uint8Array(8)));
+const fld=(id,l,t)=>'<label>'+l+'<input id="'+id+'" type="'+(t||'text')+'"></label>';
+const rsel=v=>'<label>Rôle<select id="ur">'+Object.keys(ROLES).map(k=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+ROLES[k].l+'</option>').join('')+'</select></label>';
+const flow=()=>'<div class="flow">'+[...new Set(TB.filter(t=>t.c&&vis(t.id)).map(t=>t.g))].map(g=>{const t=TB.find(x=>x.g===g&&x.c&&vis(x.id));return '<a onclick="A.go(\''+t.id+'\')">'+(IC[g]||'')+' '+g+'</a>'}).join('')+'</div>';
+const showLogin=()=>{const l=$('lg');l.hidden=false;l.innerHTML='<div class="lc"><h1>📦 Base logistique</h1><p class="note">Connectez-vous pour accéder à la base de données.</p><label>E-mail<input id="le" type="email" autocomplete="username" onkeydown="if(event.key===\'Enter\')A.login()"></label><label>Mot de passe<input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')A.login()"></label><div id="lm" class="note"></div><button class="btn p" style="width:100%" onclick="A.login()">Se connecter</button></div>'};
+const boot=()=>{db.users=db.users||[];if(!db.users.some(u=>u.email===SU))db.users.unshift(Object.assign({},SEEDU));save();let s=null;try{s=sessionStorage.getItem('logdb-sess')}catch(e){}const u=db.users.find(x=>x.email===s);if(u){me=u;render()}else showLogin()};
+function usersView(){return '<h2>Utilisateurs & rôles</h2><div class="src">Accès réservé au super admin</div><div class="bar"><button class="btn p" onclick="A.nu()">+ Nouvel utilisateur</button></div><div class="tw"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th></th></tr></thead><tbody>'+db.users.map((u,i)=>'<tr><td>'+esc(u.nom)+'</td><td>'+esc(u.email)+'</td><td><span class="b o">'+ROLES[u.role].l+'</span></td><td class="act"><button title="Modifier" onclick="A.eu('+i+')">✎</button>'+(u.email===SU?'':'<button title="Supprimer" onclick="A.du('+i+')">✕</button>')+'</td></tr>').join('')+'</tbody></table></div><h3>Droits par rôle</h3><div class="al">'+Object.keys(ROLES).filter(k=>k!=='super_admin').map(k=>'<div><b>'+ROLES[k].l+'</b><br>'+TB.filter(t=>ROLES[k].p[t.id]).map(t=>esc(t.l)+' <small>('+LV[ROLES[k].p[t.id]]+')</small>').join(' · ')+'</div>').join('')+'<div><b>Super admin</b><br>Accès total, gestion des utilisateurs, sauvegarde et restauration</div></div>'}
 const raw=(c,r)=>c[2]==='c'?c[3](r,db.t):r[c[0]];
 const badge=s=>/Échu|Critique|ALERTE|Surconso|Refus|Échéance/.test(s)?'e':/Proche|Réappro|attente|En cours|Sous-|Maintenance|Mission/i.test(s)?'w':/^(OK|Correct|Normal|Terminé|Livré|Disponible|Clôturé|Accepté|Excellent)/.test(s)?'o':'';
 const cell=(c,r)=>{const v=raw(c,r),s=f0(v,c[4]),t=c[2]||'t',b=(t==='s'||t==='c')&&typeof v==='string'&&s?badge(s):'';
 return{t:s,h:b?'<span class="b '+b+'">'+esc(s)+'</span>':esc(s),n:typeof v==='number'||t==='n'}};
 /* ---- rendu ---- */
-function render(){let g='';$('nav').innerHTML='<h1>Base logistique</h1>'+(DL?'<button onclick="A.dl(\'xlsx\')">⬇ Tout en Excel (.xlsx)</button><button onclick="A.dl(\'json\')">⬇ Sauvegarde (.json)</button>':'')+TB.map(T=>{const h=T.g!==g?'<h4>'+T.g+'</h4>':'';g=T.g;return h+'<button class="'+(T.id===cur?'on':'')+'" onclick="A.go(\''+T.id+'\')">'+T.l+'</button>'}).join('');
+function render(){if(!me)return;let g='';$('nav').innerHTML='<h1>📦 Base logistique</h1><div class="me"><b>'+esc(me.nom)+'</b><small>'+ROLES[me.role].l+'</small><div><button onclick="A.pw()">Mot de passe</button><button onclick="A.out()">Quitter</button></div></div>'+(DL?'<button onclick="A.dl(\'xlsx\')">⬇ Tout en Excel (.xlsx)</button>'+(me.role==='super_admin'?'<button onclick="A.dl(\'json\')">⬇ Sauvegarde (.json)</button>':'')+'':'')+TB.filter(T=>vis(T.id)).map(T=>{const h=T.g!==g?'<h4>'+(IC[T.g]||'')+' '+T.g+'</h4>':'';g=T.g;return h+'<button class="'+(T.id===cur?'on':'')+'" onclick="A.go(\''+T.id+'\')">'+T.l+'</button>'}).join('');
 $('dls').innerHTML=[['veh',db.t.flotte.map(v=>v.code)],['art',db.t.articles.map(a=>a.ref)],['p23',db.t.prod23.map(a=>a.code)],['chf',[...new Set([...db.t.flotte.map(v=>v.chf),...db.t.trajets.map(t=>t.chf)])].filter(Boolean)]].map(([k,l])=>'<datalist id="dl-'+k+'">'+l.map(x=>'<option value="'+esc(x)+'">').join('')+'</datalist>').join('');
-$('main').innerHTML=cur==='dash'?dash():tbl(TB.find(t=>t.id===cur));
+$('main').innerHTML=cur==='dash'?dash():cur==='users'?usersView():tbl(TB.find(t=>t.id===cur));
 const s=document.querySelector('input[type=search]');if(s&&q){s.focus();s.setSelectionRange(q.length,q.length)}}
-function tbl(T){const R=rows(T),ql=q.toLowerCase();
+function tbl(T0){const T=Object.assign({},T0,{ro:T0.ro||!can(T0.id,'w'),del:can(T0.id,'d')});const R=rows(T),ql=q.toLowerCase();
 const L=R.map((r,i)=>({r,i,cs:T.c.map(c=>cell(c,r))})).filter(x=>!ql||x.cs.some(c=>c.t.toLowerCase().includes(ql)));
 const sm=T.sum||[];
-return '<h2>'+T.l+'</h2><div class="src">Source : '+T.s+' · '+L.length+' ligne(s)</div><div class="bar"><input type="search" placeholder="Rechercher…" value="'+esc(q)+'" oninput="A.q(this.value)">'+(T.ro?'':'<button class="btn p" onclick="A.add()">+ Ajouter</button>')+'<button class="btn" onclick="A.csv()">Exporter CSV</button>'+(DL?'<button class="btn p" onclick="A.dl(\'csv\')">⬇ Télécharger .csv</button>':'')+'<button class="btn" onclick="A.bk()">Sauvegarde</button></div>'
+return '<h2>'+T.l+'</h2><div class="src">Source : '+T.s+' · '+L.length+' ligne(s)</div><div class="bar"><input type="search" placeholder="Rechercher…" value="'+esc(q)+'" oninput="A.q(this.value)">'+(T.ro?'':'<button class="btn p" onclick="A.add()">+ Ajouter</button>')+'<button class="btn" onclick="A.csv()">Exporter CSV</button>'+(DL?'<button class="btn p" onclick="A.dl(\'csv\')">⬇ Télécharger .csv</button>':'')+''+(me.role==='super_admin'?'<button class="btn" onclick="A.bk()">Sauvegarde</button>':'')+'</div>'
 +'<div class="tw"><table><thead><tr>'+T.c.map(c=>'<th>'+esc(c[1])+'</th>').join('')+(T.ro?'':'<th></th>')+'</tr></thead><tbody>'
-+L.map(x=>'<tr>'+x.cs.map(c=>'<td'+(c.n?' class="r"':'')+'>'+c.h+'</td>').join('')+(T.ro?'':'<td class="act"><button title="Modifier" onclick="A.ed('+x.i+')">✎</button><button title="Supprimer" onclick="A.rm('+x.i+')">✕</button></td>')+'</tr>').join('')
++L.map(x=>'<tr>'+x.cs.map(c=>'<td'+(c.n?' class="r"':'')+'>'+c.h+'</td>').join('')+(T.ro?'':'<td class="act"><button title="Modifier" onclick="A.ed('+x.i+')">✎</button>'+(T.del?'<button title="Supprimer" onclick="A.rm('+x.i+')">✕</button>':'')+'</td>')+'</tr>').join('')
 +(sm.length?'<tr class="t">'+T.c.map((c,j)=>j===0?'<td>Total</td>':sm.includes(c[0])?'<td class="r">'+f0(sumBy(L,x=>raw(c,x.r)),c[4])+'</td>':'<td></td>').join('')+(T.ro?'':'<td></td>')+'</tr>':'')
 +'</tbody></table></div>'}
 const kp=(l,v,s)=>'<div class="k"><span>'+l+'</span><b>'+v+'</b>'+(s?'<small>'+s+'</small>':'')+'</div>';
@@ -158,7 +203,7 @@ D.flotte.filter(v=>/Échu/.test(ech(v))).forEach(v=>al.push(['Flotte',v.code+' :
 const V=D.flotte.map(v=>{const k=sumBy(D.trajets.filter(t=>t.veh===v.code),kmp),cr=D.carb.filter(c=>c.veh===v.code),l=sumBy(cr,c=>c.lit),kk=sumBy(cr,c=>c.kmd),cf=sumBy(cr,c=>c.cout),
 rp=sumBy(D.pannes.filter(x=>x.veh===v.code),x=>x.cout)+sumBy(D.maint.filter(x=>x.code===v.code),x=>x.cout),am=k*(num(v.cout)-num(p.res))/(num(p.life)||1);
 return '<tr><td>'+esc(v.code)+'</td><td>'+esc(v.mod)+'</td><td class="r">'+f0(k)+'</td><td class="r">'+f0(l)+'</td><td class="r">'+f0(cf)+'</td><td class="r">'+f0(kk?l/kk*100:NaN,1)+'</td><td class="r">'+f0(rp)+'</td><td class="r">'+f0(am)+'</td><td class="r"><b>'+f0(cf+rp+am)+'</b></td></tr>'}).join('');
-return '<h2>Tableau de bord</h2><div class="src">Chaîne : besoin → achat → réception → stockage → sortie → flotte → maintenance → personnel → actifs</div><div class="kp">'
+return '<h2>Tableau de bord</h2><div class="src">Chaîne logistique : cliquez sur une étape</div>'+flow()+'<div class="kp">'
 +kp('Valeur du stock',f0(sv)+' $',D.articles.length+' articles')+kp('Articles en alerte',sa.length,'critique ou à réapprovisionner')
 +kp('Budget achats',f0(bud)+' $','réel '+f0(rel)+' $ · écart '+f0(rel-bud)+' $')+kp('Taux de livraison',f0(liv*100,0)+' %',D.achats.length+' achats')
 +kp('Km parcourus',f0(km),D.trajets.length+' trajets')+kp('Carburant',f0(lit)+' L',f0(cc)+' $ · '+f0(kc?lit/kc*100:NaN,1)+' L/100 km')
@@ -172,7 +217,7 @@ const dlg=$('dlg');
 const dlgOpen=h=>{dlg.innerHTML=h;if(!dlg.open)dlg.showModal()};
 const curT=()=>TB.find(t=>t.id===cur);
 const A=window.A={
-go(id){cur=id;q='';render();$('main').scrollTop=0},
+go(id){if(!vis(id))return;cur=id;q='';render();$('main').scrollTop=0},
 q(v){q=v;render()},
 p(k,v){db.p[k]=num(v);save();render()},
 add(){A.form(null)},ed(i){A.form(i)},
@@ -180,24 +225,37 @@ form(i){const T=curT(),r=i==null?{}:rows(T)[i];
 dlgOpen('<h3 style="margin-top:0">'+(i==null?'Ajouter':'Modifier')+' – '+T.l+'</h3><div class="g2">'+T.c.filter(c=>c[2]!=='c').map(c=>{const t=c[2]||'t',v=r[c[0]]==null?'':r[c[0]];
 const inp=t==='s'?'<select name="'+c[0]+'">'+['',...c[3]].map(o=>'<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>':'<input name="'+c[0]+'" type="'+(t==='n'?'number':t==='d'?'date':'text')+'"'+(t==='n'?' step="any"':'')+(t==='f'?' list="dl-'+c[3]+'"':'')+' value="'+esc(v)+'">';
 return '<label>'+esc(c[1])+inp+'</label>'}).join('')+'</div><div class="bar"><button class="btn p" onclick="A.ok('+(i==null?'null':i)+')">Enregistrer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
-ok(i){const T=curT(),o={};dlg.querySelectorAll('[name]').forEach(e=>{const c=T.c.find(c=>c[0]===e.name);o[e.name]=c[2]==='n'?(e.value===''?'':+e.value):e.value});
+ok(i){if(!can(cur,'w'))return;const T=curT(),o={};dlg.querySelectorAll('[name]').forEach(e=>{const c=T.c.find(c=>c[0]===e.name);o[e.name]=c[2]==='n'?(e.value===''?'':+e.value):e.value});
 if(i==null)rows(T).push(o);else rows(T)[i]=o;save();dlg.close();render()},
 rm(i){dlgOpen('<h3 style="margin-top:0">Supprimer cette ligne ?</h3><p>Cette action est définitive.</p><div class="bar"><button class="btn d" onclick="A.del('+i+')">Supprimer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
-del(i){rows(curT()).splice(i,1);save();dlg.close();render()},
+del(i){if(!can(cur,'d'))return;rows(curT()).splice(i,1);save();dlg.close();render()},
 csv(){const T=curT(),R=rows(T),e=v=>'"'+String(v).replace(/"/g,'""')+'"';
 const t=[T.c.map(c=>e(c[1])).join(';')].concat(R.map(r=>T.c.map(c=>e(f0(raw(c,r),c[4]))).join(';'))).join('\n');
 dlgOpen('<h3 style="margin-top:0">CSV – '+T.l+'</h3><p class="note">Copiez ce texte, puis collez-le dans Excel ou un fichier .csv.</p><textarea id="tx" readonly>'+esc(t)+'</textarea><div class="bar"><button class="btn p" onclick="A.cp()">Copier</button><button class="btn" onclick="dlg.close()">Fermer</button></div>')},
 bk(){dlgOpen('<h3 style="margin-top:0">Sauvegarde de toute la base</h3><p class="note">Copiez ce JSON pour sauvegarder. Pour restaurer, collez une sauvegarde ci-dessous puis cliquez sur Restaurer.</p><textarea id="tx">'+esc(JSON.stringify(db))+'</textarea><div id="msg" class="note"></div><div class="bar"><button class="btn p" onclick="A.cp()">Copier</button><button class="btn" onclick="A.rs()">Restaurer</button><button class="btn d" onclick="A.rz()">Réinitialiser (données d’origine)</button><button class="btn" onclick="dlg.close()">Fermer</button></div>')},
 cp(){const t=$('tx');t.select();try{navigator.clipboard.writeText(t.value).catch(()=>document.execCommand('copy'))}catch(e){try{document.execCommand('copy')}catch(x){}}},
-rs(){try{const s=JSON.parse($('tx').value);if(!s.t||!s.t.flotte)throw 0;db=s;if(!db.p)db.p={res:5000,life:150000};save();dlg.close();render()}catch(e){$('msg').textContent='Sauvegarde invalide : rien n’a été modifié.'}},
-rz(){try{localStorage.removeItem(KEY)}catch(e){}init();dlg.close();render()},
+rs(){try{const s=JSON.parse($('tx').value);if(!s.t||!s.t.flotte)throw 0;const u0=db.users;db=s;db.users=u0;if(!db.p)db.p={res:5000,life:150000};save();dlg.close();render()}catch(e){$('msg').textContent='Sauvegarde invalide : rien n’a été modifié.'}},
+rz(){try{localStorage.removeItem(KEY)}catch(e){}const u0=db.users;init();db.users=u0;save();dlg.close();render()},
+async login(){const e=$('le').value.trim().toLowerCase(),u=db.users.find(x=>x.email===e),m=$('lm');if(!window.crypto||!crypto.subtle){m.textContent='Connexion indisponible : ouvrez la page en HTTPS.';return}
+const ok=u&&await hsh($('lp').value,u.salt)===u.hash;if(!ok){await new Promise(r=>setTimeout(r,700));m.textContent='E-mail ou mot de passe incorrect.';return}
+me=u;try{sessionStorage.setItem('logdb-sess',u.email)}catch(x){}$('lg').hidden=true;cur='dash';render()},
+out(){try{sessionStorage.removeItem('logdb-sess')}catch(e){}me=null;$('nav').innerHTML='';$('main').innerHTML='';showLogin()},
+nu(){dlgOpen('<h3 style="margin-top:0">Nouvel utilisateur</h3>'+fld('un','Nom complet')+fld('ue','E-mail','email')+rsel('magasinier')+fld('up','Mot de passe initial (8 caractères min.)','password')+'<div id="msg" class="note"></div><div class="bar"><button class="btn p" onclick="A.su()">Créer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
+async su(){if(me.role!=='super_admin')return;const n=$('un').value.trim(),e=$('ue').value.trim().toLowerCase(),p=$('up').value,m=$('msg');if(!n||!/^\S+@\S+\.\S+$/.test(e)||p.length<8){m.textContent='Nom, e-mail valide et mot de passe de 8 caractères minimum requis.';return}if(db.users.some(u=>u.email===e)){m.textContent='Cet e-mail existe déjà.';return}
+const s=rnd();db.users.push({email:e,nom:n,role:$('ur').value,salt:s,hash:await hsh(p,s)});save();dlg.close();render()},
+eu(i){const u=db.users[i];dlgOpen('<h3 style="margin-top:0">Modifier – '+esc(u.nom)+'</h3>'+(u.email===SU?'<p class="note">Le rôle du super admin est fixe.</p>':rsel(u.role))+fld('up','Nouveau mot de passe (vide = inchangé)','password')+'<div id="msg" class="note"></div><div class="bar"><button class="btn p" onclick="A.se('+i+')">Enregistrer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
+async se(i){if(me.role!=='super_admin')return;const u=db.users[i],p=$('up').value;if(p&&p.length<8){$('msg').textContent='8 caractères minimum.';return}if(u.email!==SU)u.role=$('ur').value;if(p){u.salt=rnd();u.hash=await hsh(p,u.salt)}save();dlg.close();render()},
+du(i){dlgOpen('<h3 style="margin-top:0">Supprimer cet utilisateur ?</h3><div class="bar"><button class="btn d" onclick="A.dx('+i+')">Supprimer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
+dx(i){const u=db.users[i];if(me.role==='super_admin'&&u&&u.email!==SU&&u!==me){db.users.splice(i,1);save()}dlg.close();render()},
+pw(){dlgOpen('<h3 style="margin-top:0">Changer mon mot de passe</h3>'+fld('po','Mot de passe actuel','password')+fld('up','Nouveau mot de passe (8 caractères min.)','password')+'<div id="msg" class="note"></div><div class="bar"><button class="btn p" onclick="A.sp()">Enregistrer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
+async sp(){const m=$('msg');if(await hsh($('po').value,me.salt)!==me.hash){m.textContent='Mot de passe actuel incorrect.';return}if($('up').value.length<8){m.textContent='8 caractères minimum.';return}me.salt=rnd();me.hash=await hsh($('up').value,me.salt);save();dlg.close()},
 dl(k){if(!DL)return;const T=curT(),e=v=>'"'+String(v).replace(/"/g,'""')+'"';let f,d;
 if(k==='csv'){f=T.id+'.csv';d='\ufeff'+[T.c.map(c=>e(c[1])).join(';')].concat(rows(T).map(r=>T.c.map(c=>e(f0(raw(c,r),c[4]))).join(';'))).join('\r\n')}
 else if(k==='json'){f='base_logistique.json';d=JSON.stringify(db)}
-else{if(!window.XLSX)return;const wb=XLSX.utils.book_new();TB.filter(t=>t.c).forEach(t=>{const a=[t.c.map(c=>c[1])].concat(rows(t).map(r=>t.c.map(c=>{const v=raw(c,r);return typeof v==='number'&&!isFinite(v)?'':v})));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),t.l.replace(/[\\/?*\[\]:]/g,' ').slice(0,31))});f='base_logistique.xlsx';d=XLSX.write(wb,{type:'array',bookType:'xlsx'})}
+else{if(!window.XLSX)return;const wb=XLSX.utils.book_new();TB.filter(t=>t.c&&lv(t.id)).forEach(t=>{const a=[t.c.map(c=>c[1])].concat(rows(t).map(r=>t.c.map(c=>{const v=raw(c,r);return typeof v==='number'&&!isFinite(v)?'':v})));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),t.l.replace(/[\\/?*\[\]:]/g,' ').slice(0,31))});f='base_logistique.xlsx';d=XLSX.write(wb,{type:'array',bookType:'xlsx'})}
 DL.save({filename:f,data:d}).catch(()=>{})}
 };
-window.dlg=dlg;init();render();
+window.dlg=dlg;init();TB.sort((a,b)=>ORD.indexOf(a.id)-ORD.indexOf(b.id));boot();
 const shim={save:o=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([o.data]));a.download=o.filename;document.body.appendChild(a);a.click();a.remove();return Promise.resolve()}};
 if(window.claude&&window.claude.use){window.claude.use('downloads').then(d=>{DL=d;if(d)render()}).catch(()=>{})}else{DL=shim;render()}
 })();
