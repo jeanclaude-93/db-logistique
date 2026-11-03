@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Base de données logistique intégrée</title>
+<style>
+:root{--bg:#f4f6f9;--sf:#fff;--tx:#1b2430;--mu:#657085;--bd:#dde2ea;--ac:#0b5cab;--ok:#17703d;--wa:#8a5200;--er:#a31d24;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--sf:#1a2029;--tx:#e6eaf0;--mu:#97a1b3;--bd:#2c3542;--ac:#5aa6ee;--ok:#4cc27f;--wa:#e0a040;--er:#f0777c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161c;--sf:#1a2029;--tx:#e6eaf0;--mu:#97a1b3;--bd:#2c3542;--ac:#5aa6ee;--ok:#4cc27f;--wa:#e0a040;--er:#f0777c;color-scheme:dark}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 Arial,Helvetica,sans-serif}
+.app{display:flex;height:100%}
+nav{width:236px;flex:none;overflow:auto;background:var(--sf);border-right:1px solid var(--bd);padding:10px 8px}
+nav h1{font-size:15px;margin:4px 6px 8px}
+nav h4{margin:12px 6px 4px;font-size:11px;text-transform:uppercase;color:var(--mu);letter-spacing:.04em}
+nav button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--tx);padding:6px 8px;border-radius:6px;cursor:pointer;font:inherit}
+nav button:hover{background:var(--bg)}nav button.on{background:var(--ac);color:#fff}
+main{flex:1;min-width:0;overflow:auto;padding:16px}
+@media(max-width:760px){.app{flex-direction:column}nav{width:auto;max-height:34%;border-right:0;border-bottom:1px solid var(--bd)}}
+h2{margin:0 0 2px;font-size:20px}.src{color:var(--mu);font-size:12px;margin-bottom:10px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.bar input[type=search]{flex:1;min-width:140px}
+input,select,textarea{font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;box-sizing:border-box}
+.btn{border:1px solid var(--bd);background:var(--sf);color:var(--tx);border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}.btn.d{color:var(--er)}
+.tw{overflow-x:auto;background:var(--sf);border:1px solid var(--bd);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;white-space:nowrap;padding:7px 9px;border-bottom:2px solid var(--bd);background:var(--sf);color:var(--mu)}
+td{padding:6px 9px;border-bottom:1px solid var(--bd);vertical-align:top}
+tr.t td{font-weight:bold;background:var(--bg)}.r{text-align:right;white-space:nowrap}
+.act{white-space:nowrap}.act button{border:0;background:none;cursor:pointer;color:var(--ac);font-size:15px}
+.b{padding:1px 8px;border-radius:10px;font-size:12px;white-space:nowrap;display:inline-block}
+.e{background:rgba(192,38,45,.15);color:var(--er)}.w{background:rgba(224,160,64,.2);color:var(--wa)}.o{background:rgba(40,160,100,.16);color:var(--ok)}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0 16px}
+.k{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
+.k span{color:var(--mu);font-size:12px}.k b{display:block;font-size:20px;margin-top:2px}.k small{color:var(--mu)}
+h3{margin:18px 0 8px;font-size:15px}.al{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:4px 12px}
+.al div{padding:6px 0;border-bottom:1px solid var(--bd)}.al div:last-child{border:0}
+.note{color:var(--mu);font-size:12px;margin-top:14px}
+dialog{background:var(--sf);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:16px;width:min(560px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog label{display:block;font-size:12px;color:var(--mu);margin-bottom:8px}dialog label input,dialog label select{display:block;width:100%;margin-top:3px;color:var(--tx)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-height:60vh;overflow:auto}
+dialog textarea{width:100%;height:240px;font:12px monospace}
+</style><script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></head><body>
+<div class="app"><nav id="nav"></nav><main id="main"></main></div>
+<dialog id="dlg"></dialog><div id="dls"></div>
+<script>
+(()=>{
+const NOW=new Date(),YR=NOW.getFullYear(),KEY='logdb-v1';
+const num=v=>(v===''||v==null||isNaN(+v))?0:+v;
+const has=v=>v!==''&&v!=null&&!isNaN(+v);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const f0=(v,d)=>typeof v==='number'?(isFinite(v)?v.toLocaleString('fr-FR',{maximumFractionDigits:d==null?2:d}):''):(v==null?'':String(v));
+const sumBy=(a,f)=>a.reduce((s,r)=>s+num(f(r)),0);
+const addDays=n=>{const d=new Date(NOW);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const yr=d=>+String(d).slice(0,4)||YR;
+/* ---- règles de calcul (reprises des classeurs d’origine) ---- */
+const mv=(D,ref,t)=>sumBy(D.mvt.filter(m=>m.ref===ref&&m.type===t),m=>m.qte);
+const stk=(r,D)=>mv(D,r.ref,'Entrée')-mv(D,r.ref,'Sortie');
+const mini=r=>num(r.cjm)*num(r.dl)+num(r.ss);
+const m3=(D,c,t)=>sumBy(D.mv23.filter(m=>m.code===c&&m.type===t),m=>m.qte);
+const fin3=(r,D)=>num(r.ini)+m3(D,r.code,'Entrée')-m3(D,r.code,'Sortie');
+const pid=(n,D)=>{const w=String(n||'').split(' ');return D.pers.find(x=>x.role==='Chauffeur'&&x.nom.startsWith(w[0])&&(!w[1]||x.nom.split(' ').pop().startsWith(w[1][0])))};
+const stat=(r,D)=>{const s=stk(r,D);return s<=num(r.ss)?'Critique':s<=mini(r)?'Réappro':'OK'};
+const norme=z=>/asphalte/i.test(z)?12:/masisi/i.test(z)?22:/rutshuru/i.test(z)?16:15;
+const cons=r=>num(r.kmd)?num(r.lit)/num(r.kmd)*100:NaN;
+const eca=r=>(cons(r)-norme(r.zone))/norme(r.zone);
+const calert=r=>{const e=eca(r);return !isFinite(e)?'':e>.15?'Surconsommation':e<-.15?'Sous-consommation':'Normal'};
+const kmp=r=>has(r.kmd)&&has(r.kmr)?r.kmr-r.kmd:'';
+const avb=r=>num(r.qte)*num(r.pu);
+const ans=r=>Math.max(0,YR-yr(r.date));
+const aam=r=>Math.min(avb(r),avb(r)*num(r.taux)/100*ans(r));
+const reste=r=>has(r.prox)?r.prox-num(r.cpt):'';
+const malert=r=>reste(r)===''?'':reste(r)<=(r.type==='Véhicule'?1000:100)?'Échéance proche':'OK';
+const ech=r=>{if(!r.next)return'';const d=Math.round((new Date(r.next)-NOW)/864e5);return d<0?'Échu ('+(-d)+' j)':d<=30?'Proche ('+d+' j)':'OK'};
+/* ---- schéma : [clé, libellé, type(t|n|d|s|f|c), options|fn, décimales] ---- */
+const TB=[
+{id:'dash',g:'Pilotage',l:'Tableau de bord'},
+{id:'req',g:'1. Besoin & achat',l:'Réquisitions (SR)',s:'Demande de Réquisition (SR)',c:[['sr','N° SR'],['date','Date','d'],['des','Désignation'],['code','Code actif / catégorie'],['u','Unité'],['qte','Qté','n'],['pu','P.U. estimé ($)','n'],['tot','Total ($)','c',r=>num(r.qte)*num(r.pu)],['just','Justification']],sum:['tot']},
+{id:'po',g:'1. Besoin & achat',l:'Bons de commande (PO)',s:'Bon de Commande (PO)',c:[['po','N° PO'],['four','Fournisseur'],['code','Code article'],['des','Désignation'],['u','Unité'],['qte','Qté','n'],['pu','P.U. ($)','n'],['tot','Total HT ($)','c',r=>num(r.qte)*num(r.pu)],['lig','Ligne budgétaire']],sum:['tot']},
+{id:'achats',g:'1. Besoin & achat',l:'Suivi des achats & budget',s:'Suivi des Achats, Tableau de Bord, Plan d’Achat',c:[['id','ID achat'],['des','Désignation'],['lieu','Lieu de livraison'],['qte','Qté','n'],['pub','P.U. budget ($)','n'],['pur','P.U. réel ($)','n'],['bud','Budget ($)','c',r=>num(r.qte)*num(r.pub)],['rel','Réel ($)','c',r=>num(r.qte)*num(r.pur)],['ec','Écart ($)','c',r=>num(r.qte)*(num(r.pur)-num(r.pub))],['statut','Statut','s',['Livré','En attente']]],sum:['bud','rel','ec']},
+{id:'recep',g:'2. Réception',l:'Réceptions entrepôt',s:'Fiche de Pointage Réception',c:[['date','Date','d'],['po','N° PO'],['ref','Réf.'],['des','Désignation'],['u','Unité'],['att','Qté attendue (BL)','n'],['rec','Qté reçue','n'],['ec','Écart','c',r=>num(r.rec)-num(r.att)],['dec','Décision'],['empl','Emplacement'],['ano','Anomalie']],sum:['att','rec','ec']},
+{id:'articles',g:'3. Stockage',l:'Catalogue articles',s:'Produits, Gestion des Stocks, Plan d’Appro',c:[['ref','Référence'],['des','Désignation'],['u','Unité'],['cjm','Conso. jour moy.','n'],['dl','Délai livr. (j)','n'],['ss','Stock sécurité','n'],['pu','P.U. ($)','n'],['min','Stock min. (=CJM×délai+sécu.)','c',mini]]},
+{id:'mvt',g:'3. Stockage',l:'Mouvements de stock',s:'Gestion des Stocks (entrées/sorties)',c:[['date','Date','d'],['ref','Article','f','art'],['des','Désignation','c',(r,D)=>(D.articles.find(a=>a.ref===r.ref)||{}).des||''],['type','Mouvement','s',['Entrée','Sortie']],['qte','Qté','n']]},
+{id:'stock',g:'3. Stockage',l:'Stock & alertes',base:'articles',ro:1,s:'Inventaire du Stock, Stocks & Planification',c:[['ref','Réf.'],['des','Désignation'],['u','Unité'],['ent','Entrées','c',(r,D)=>mv(D,r.ref,'Entrée')],['sor','Sorties','c',(r,D)=>mv(D,r.ref,'Sortie')],['stk','Stock actuel','c',stk],['min','Stock min.','c',r=>mini(r)],['st','Statut','c',stat],['val','Valeur ($)','c',(r,D)=>stk(r,D)*num(r.pu)],['rea','Réappro. estimé','c',(r,D)=>stat(r,D)==='OK'?'':addDays(num(r.dl))]],sum:['val']},
+{id:'prod23',g:'3. Stockage',l:'Inventaire 2023 (Produits A–K)',s:'Inventaire du Stock (données 2023)',c:[['code','Code article'],['des','Désignation'],['min','Stock min','n'],['ini','Stock initial','n'],['pu','P.U. ($)','n'],['ent','Entrées','c',(r,D)=>m3(D,r.code,'Entrée')],['sor','Sorties','c',(r,D)=>m3(D,r.code,'Sortie')],['fin','Stock final','c',fin3],['val','Valeur ($)','c',(r,D)=>fin3(r,D)*num(r.pu)],['al','Alerte','c',(r,D)=>fin3(r,D)<=num(r.min)?'ALERTE':'Correct']],sum:['val']},
+{id:'mv23',g:'3. Stockage',l:'Mouvements 2023',s:'Entrées et Sorties (données 2023)',c:[['date','Date','d'],['code','Code article','f','p23'],['des','Désignation','c',(r,D)=>(D.prod23.find(a=>a.code===r.code)||{}).des||''],['type','Mouvement','s',['Entrée','Sortie']],['qte','Qté','n']]},
+{id:'seuils',g:'3. Stockage',l:'Seuils de stock (NRC Sud-Kivu)',s:'Gestion des Seuils de Stock',c:[['code','Code article'],['des','Désignation'],['u','Unité'],['min','Stock min. (alerte)','n'],['max','Stock max. (plafond)','n'],['qec','Écart (QEC)','c',r=>num(r.max)-num(r.min)]]},
+{id:'sorties',g:'4. Sortie des biens',l:'Sorties & expéditions',s:'Sortie Interne Base, Bordereau d’Expédition',c:[['type','Type','s',['Usage interne','Expédition']],['doc','N° document'],['date','Date','d'],['dest','Bénéficiaire / destination'],['ref','Réf. / ID actif'],['des','Désignation'],['qte','Qté sortie','n'],['recu','Qté reçue terrain','n'],['veh','Véhicule','f','veh'],['ec','Écart','c',r=>has(r.recu)?r.recu-num(r.qte):'']]},
+{id:'flotte',g:'5. Flotte, km & carburant',l:'État de la flotte',s:'1. État de la Flotte',c:[['code','Code'],['imm','Immatriculation'],['mod','Marque / modèle'],['typ','Type'],['an','Année','n'],['chs','N° châssis'],['acq','Acquisition','d'],['cout','Coût initial ($)','n'],['statut','Statut','s',['Disponible','En Mission','En Maintenance']],['next','Prochain entretien','d'],['chf','Chauffeur attitré','f','chf'],['ech','Échéance','c',ech]],sum:['cout']},
+{id:'trajets',g:'5. Flotte, km & carburant',l:'Trajets & kilométrage',s:'2. Suivi des Mouvements, Suivi Consommation, Registre Missions',c:[['date','Date','d'],['veh','Véhicule','f','veh'],['chf','Chauffeur','f','chf'],['trj','Trajet / destination'],['mot','Motif'],['eq','Équipage / passagers'],['hd','Départ'],['hr','Retour'],['kmd','Km départ','n'],['kmr','Km retour','n'],['km','Km parcourus','c',kmp],['pid','ID chauffeur (personnel)','c',(r,D)=>(pid(r.chf,D)||{}).id||''],['statut','Statut','s',['En cours','Terminé']]],sum:['km']},
+{id:'carb',g:'5. Flotte, km & carburant',l:'Carburant & consommation',s:'3. Carburant & Consommation, Suivi Flotte & Consommation',c:[['date','Date','d'],['veh','Véhicule','f','veh'],['chf','Chauffeur','f','chf'],['zone','Axe / zone'],['kmc','Km compteur','n'],['lit','Litres','n'],['cout','Coût ($)','n'],['sta','Station / source'],['kmd','Km depuis dernier plein','n'],['cons','Conso (L/100 km)','c',cons,1],['nor','Norme zone','c',r=>norme(r.zone)],['ec','Écart (%)','c',r=>eca(r)*100,1],['al','Alerte','c',calert]],sum:['lit','cout']},
+{id:'pannes',g:'6. Pannes & maintenance',l:'Pannes & réparations',s:'Suivi des Pannes Flotte',c:[['id','ID panne'],['veh','Véhicule','f','veh'],['chf','Chauffeur','f','chf'],['aff','Affectation'],['typ','Type','s',['Mineure','Majeure']],['des','Description'],['act','Réparation / action'],['date','Signalée le','d'],['cout','Coût ($)','n'],['statut','Statut','s',['En cours','En attente pièce','Clôturé']],['imm','Immobilisation (j)','n']],sum:['cout','imm']},
+{id:'maint',g:'6. Pannes & maintenance',l:'Maintenance flotte & énergie',s:'Maintenance Flotte, Maintenance Énergie & Générateurs',c:[['type','Type','s',['Véhicule','Groupe électrogène']],['code','Code'],['des','Désignation'],['int','Intervention'],['date','Date','d'],['cpt','Compteur (km / h)','n'],['prox','Prochain service','n'],['trav','Pièces / travaux'],['pre','Prestataire'],['cout','Coût ($)','n'],['statut','Statut','s',['Terminé','En Attente']],['rst','Reste avant service','c',reste],['al','Alerte','c',malert]],sum:['cout']},
+{id:'pers',g:'7. Personnel',l:'Chauffeurs, gardiens, managers',s:'Suivi Chauffeurs, Suivi Gardiens, Suivi Managers',c:[['id','ID'],['nom','Nom & prénom'],['role','Rôle','s',['Chauffeur','Gardien','Manager']],['aff','Véhicule / site / département'],['mis','Axe / shift / objectif'],['tac','Tâches clés'],['st','Statut'],['det','Détails (heures, réalisation, alertes)'],['ntr','Trajets','c',(r,D)=>r.role==='Chauffeur'?D.trajets.filter(t=>pid(t.chf,D)===r).length:''],['kmt','Km parcourus','c',(r,D)=>r.role==='Chauffeur'?sumBy(D.trajets.filter(t=>pid(t.chf,D)===r),kmp):''],['lt','Litres carburant','c',(r,D)=>r.role==='Chauffeur'?sumBy(D.carb.filter(c=>pid(c.chf,D)===r),c=>c.lit):'']]},
+{id:'actifs',g:'8. Actifs',l:'Registre des actifs',s:'Gestion des Actifs, Actifs & Amortissements',c:[['id','ID actif'],['cat','Catégorie'],['des','Description'],['qte','Qté','n'],['pu','Prix unitaire ($)','n'],['date','Date d’achat','d'],['etat','État'],['taux','Taux amort. annuel (%)','n'],['vb','Valeur d’achat ($)','c',avb],['an','Années','c',ans],['am','Amort. cumulé ($)','c',aam],['van','VAN ($)','c',r=>avb(r)-aam(r)]],sum:['vb','am','van']}
+];
+/* ---- données d’origine (lignes = colonnes non calculées, dans l’ordre) ---- */
+const SD={prod23:[['0000672','Produit A',18,10,7.4],['0000673','Produit B',10,8.8,8.8],['0000674','Produit C',25,5.45,5.45],['0000675','Produit D',5,14.9,14.9],['0000676','Produit E',10,9.55,9.55],['0000677','Produit F',10,7.85,7.85],['0000678','Produit G',5,12.7,12.7],['0000679','Produit H',30,4.9,4.9],['0000680','Produit I',25,10.15,10.15],['0000681','Produit J',25,11.75,11.75],['0000682','Produit K',50,8.95,8.95]],
+mv23:[['2023-01-30','0000673','Sortie',3],['2023-01-30','0000672','Entrée',4],['2023-01-31','0000672','Entrée',2],['2023-01-31','0000672','Sortie',12],['2023-01-31','0000673','Entrée',10],['2023-01-31','0000678','Entrée',5],['2023-01-31','0000680','Entrée',10]],
+seuils:[['ART-001','Tôles ondulées BG 28','Pièce',100,500],['ART-002','Clous de charpente (100mm)','Kg',80,300],['ART-003','Kits hygiène complets','Kit',200,1500],['ART-004','Carburant Diesel (Gazole)','Litre',500,3000],['ART-005','Rames de papier A4 (80g)','Carton',15,60],['ART-006','Bâches plastiques 4x6m','Pièce',150,800],['ART-007','Savon de toilette (100g)','Carton',50,400]],
+
+req:[['SR-2026-GMA-0382','2026-06-08','Pneumatiques d’origine Toyota Land Cruiser HZJ76 (7.50R16)','LOG-VEH-ACC','Pcs',4,210,'Remplacement pneus usés pour mission Axe Masisi'],['SR-2026-GMA-0382','2026-06-08','Huile moteur premium générateur Perkins 50KVA (bidon 5L, 15W40)','LOG-GEN-MAIN','Bidons',3,45,'Maintenance préventive périodique'],['SR-2026-GMA-0382','2026-06-08','Batteries de rechange radios portatives VHF (Motorola)','IT-OFF-SUP','Pcs',5,65,'Sécurisation des communications terrain'],['SR-2026-GMA-0382','2026-06-08','Trousses de secours médicales pour dotation véhicules','OFC-SAFE-01','Pcs',2,55,'Mise en conformité sécurité de la flotte de Kitshanga']],
+po:[['PO-2026-GMA-0145','Établissements KIVU TECH & SERVICES','IT-PC-02','Ordinateur portable HP ProBook G9 Core i7, 16GB, 512GB SSD','Pcs',5,250,'9912-LOG-IT'],['PO-2026-GMA-0145','Établissements KIVU TECH & SERVICES','IT-PR-05','Imprimante HP LaserJet Pro MFP M428fdw','Pcs',2,450,'9912-LOG-IT'],['PO-2026-GMA-0145','Établissements KIVU TECH & SERVICES','OFC-ST-12','Rames de papier A4 80g (carton de 5)','Cartons',20,28,'9912-ADM-OFF'],['PO-2026-GMA-0145','Établissements KIVU TECH & SERVICES','LOG-GEN-01','Filtres à carburant générateur Perkins 50KVA','Pcs',4,85,'9912-MAIN-GEN']],
+achats:[['PR-021','Tôles ondulées BG 28','Shabunda',450,15,16.5,'Livré'],['PR-022','Clous de charpente (Kg)','Shabunda',80,3.5,3.2,'En attente'],['PR-023','Kits hygiène complets','Kalehe',1200,10,10,'Livré'],['PR-024','Carburant Diesel (litres)','Bukavu',2500,1.8,1.95,'Livré'],['PR-025','Papeterie & rames A4','Bukavu',60,6,5.5,'En attente']],
+recep:[['','','REF-001','Ordinateur portable HP ProBook','Pcs',10,10,'Accepté','A-01',''],['','','REF-002','Rame de papier A4 80g','Cartons',50,48,'Accepté partiel','B-04','Manque 2 cartons'],['','','REF-003','Cartouche d’encre Canon Black','Pcs',15,15,'Refusé (1 pcs)','C-02','1 pièce coulée / endommagée'],['','','REF-004','Tasses personnalisées Bureau','Boîtes',5,5,'Accepté','D-01','']],
+articles:[['A001','Souris','Pcs',2,5,10,5],['A002','Clavier','Pcs',1,7,5,15],['A003','PC portable','Pcs',1,10,2,850],['A004','Casque audio','Pcs',1,10,2,30],['A005','Écran','Pcs',1,10,4,150],['A006','Imprimante','Pcs',2,5,10,250],['A007','Stylo','Boîte',1,10,2,''],['A008','Bâches','Pcs',0,0,0,''],['A009','Marteau','Pcs',1,10,2,''],['A010','Scie','Pcs',1,5,2,''],['A011','Gobelet','Pcs',1,10,2,''],['A012','Tasses','Pcs',1,15,2,''],['A013','Rame papier A4','Lot',1,10,2,''],['REF001','Cahier A4','Pièce',2,10,10,''],['REF002','Stylo bleu','Boîte',1.2,6,1,'']],
+mvt:[['2026-06-05','A001','Entrée',40],['2026-06-05','A001','Sortie',10],['2026-06-06','REF001','Entrée',50],['2026-06-06','REF001','Sortie',5],['2026-06-06','A002','Entrée',30],['2026-06-07','REF002','Entrée',10],['2026-06-07','REF002','Sortie',3],['2026-06-08','A006','Entrée',10],['2026-06-08','A006','Sortie',3],['2026-06-09','A004','Entrée',6],['2026-06-09','A004','Sortie',5],['2026-06-10','A007','Entrée',2],['2026-06-10','A007','Sortie',1],['2026-06-11','A003','Entrée',2],['2026-06-11','A003','Sortie',1],['2026-06-12','A009','Entrée',4],['2026-06-12','A009','Sortie',8],['2026-06-13','A010','Entrée',3],['2026-06-13','A010','Sortie',9],['2026-06-14','A011','Entrée',10],['2026-06-14','A011','Sortie',10],['2026-06-15','A012','Entrée',15],['2026-06-15','A012','Sortie',11],['2026-06-16','A013','Entrée',15],['2026-06-16','A013','Sortie',12]],
+sorties:[['Usage interne','BSI-2026-GMA-0104','2026-06-08','Administration & RH – Bureau Log Kitshanga','ACT-001','Ordinateur portable HP ProBook G9 Core i7 (SN-HP9827163-G)',1,'',''],['Usage interne','BSI-2026-GMA-0104','2026-06-08','Administration & RH – Bureau Log Kitshanga','IT-ACC-04','Écran de projection mural avec trépied',1,'',''],['Usage interne','BSI-2026-GMA-0104','2026-06-08','Administration & RH – Bureau Log Kitshanga','OFC-ST-02','Rames de papier A4 80g (cartons)',5,'',''],['Expédition','WB-2026-06-0042','2026-06-08','Programme WASH & Éducation – Base terrain Masisi/Kitshanga','REF-001','Ordinateur portable HP ProBook',2,2,'VEH-001'],['Expédition','WB-2026-06-0042','2026-06-08','Programme WASH & Éducation – Base terrain Masisi/Kitshanga','REF-003','Imprimante Canon LaserJet Multi',1,1,'VEH-001'],['Expédition','WB-2026-06-0042','2026-06-08','Programme WASH & Éducation – Base terrain Masisi/Kitshanga','REF-024','Trousses de secours médicales',5,5,'VEH-001'],['Expédition','WB-2026-06-0042','2026-06-08','Programme WASH & Éducation – Base terrain Masisi/Kitshanga','REF-102','Rames de papier A4 80g (cartons)',10,8,'VEH-001']],
+flotte:[['VEH-001','A-1234-BC','Toyota Land Cruiser','4x4',2022,'MRH12345678','2022-03-15',45000,'Disponible','2026-07-15','Jean M.'],['VEH-002','D-5678-EF','Toyota Hilux','Pick-up',2023,'MRH87654321','2023-05-10',35000,'En Mission','2026-06-20','Pierre K.'],['VEH-003','G-9012-HI','Daf Truck','Camion',2020,'DF901234567','2021-01-20',75000,'En Maintenance','2026-06-08','Antoine T.']],
+trajets:[['2026-06-01','VEH-001','Jean M.','Goma - Sake','Distribution de kits médicaux','Dr. Kakule, Anny B. (Log)','08:00','14:30',45200,45260,'Terminé'],['2026-06-02','VEH-002','Pierre K.','Goma - Rutshuru','Évaluation des besoins Wash','Équipe Suivi & Évaluation (4 pers)','06:00','17:00',123400,123550,'Terminé'],['2026-06-03','VEH-001','Jean M.','Sake - Masisi Centre','','','','',45260,45350,''],['2026-06-04','VEH-003','Antoine T.','Minova','Ravitaillement logistique bureau','Magasinier, Assistant Admin','07:30','',  '','','En cours'],['2026-06-05','VEH-001','Jean M.','Mission Goma-Sake','','','08:00','12:30',4300,4500,'En cours'],['2026-06-06','VEH-002','Pierre K.','Distribution humanitaire','','','07:30','16:00',10200,11300,'Terminé']],
+carb:[['2026-06-01','VEH-001','Jean M.','Goma - Sake (Asphalte)','',22,75,'Station Total Goma',170],['2026-06-02','VEH-002','Pierre K.','Sake - Masisi Centre (Piste/Montagne)','',30,50,'Engen Goma',160],['2026-06-03','VEH-001','Jean M.','Goma - Rutshuru - Kanyabayonga','',42,52,'Dépôt Rutshuru',260],['2026-06-04','VEH-003','Antoine T.','Sake - Masisi Centre (Piste/Montagne)','',12,56,'Station Sake',150],['2026-06-04','VEH-002','Pierre K.','',123400,80,100,'Station Engen',680]],
+pannes:[['PAN-26-001','VEH-001','Jean M.','Axe Goma - Masisi Centre','Majeure','Casse de suspension arrière gauche sur piste','Remplacement amortisseur et silentblocs','2026-06-01',450,'En cours',7],['PAN-26-002','VEH-002','Pierre K.','Goma urbain / logistique bureau','Mineure','Clignotant avant droit défectueux','Changement ampoule, vérification fusible','2026-06-02',15,'Clôturé',0],['PAN-26-003','VEH-003','Antoine T.','Goma - Rutshuru - Kanyabayonga','Majeure','Surchauffe moteur (joint de culasse)','Joint de culasse, surfaçage, vidange liquide','2026-06-03',1200,'En attente pièce',5],['PAN-26-004','VEH-001','Jean M.','Goma urbain / navette','Mineure','Essuie-glace usé','Remplacement balais (Av/Ar)','2026-06-05',35,'Clôturé',1]],
+maint:[['Véhicule','VEH-001','Toyota Land Cruiser HZJ76','Entretien périodique','2026-05-12',145000,150000,'Filtre à huile, filtre à carburant, vidange','Garage Kivu Motor',185,'Terminé'],['Véhicule','VEH-002','Toyota Land Cruiser HZJ78','Réparation lourde','2026-05-20',212000,217000,'Kit d’embrayage et amortisseurs avant','Garage Central Goma',850,'Terminé'],['Véhicule','VEH-001','Toyota Land Cruiser HZJ76','Maintenance corrective','2026-06-05',149200,150000,'Plaquettes de frein avant','Garage Kivu Motor',120,'Terminé'],['Véhicule','VEH-003','Toyota Hilux Pick-up','Contrôle technique','2026-06-08',89400,95000,'Parallélisme et géométrie (planifié)','Garage Central Goma',75,'En Attente'],['Groupe électrogène','GEN-01','Groupe électrogène Perkins Diesel 50 KVA','Vidange standard + filtres','2026-05-15',4250,4500,'Huile 15W40, filtres huile et carburant','Interne / Logistique',145,''],['Groupe électrogène','GEN-02','Générateur de secours Kipor 10 KVA','Maintenance corrective','2026-05-28',1120,1370,'Nettoyage injecteur, batterie 12V','Éts Kivu Tech',95,''],['Groupe électrogène','GEN-01','Groupe électrogène Perkins Diesel 50 KVA','Contrôle général','2026-06-07',4495,4500,'Alternateur et courroies','Interne / Logistique',0,'']],
+pers:[['CH-01','Jean Magugu','Chauffeur','VEH-001 (Toyota LC)','Axe Goma - Masisi Centre','Niveaux diesel/huile, transport équipe médicale, carnet de bord','En mission','Prise de service 07:00 · 2 h supplém.'],['CH-02','Pierre Kakule','Chauffeur','VEH-002 (Toyota Hilux)','Goma urbain / logistique','Ravitaillement bureau, inspection technique hebdo, propreté','Disponible','Prise de service 08:00 · 0 h supplém.'],['GAR-01','Michel Amisi','Gardien','Bureau principal Goma','Nuit (18h-06h)','Contrôle des accès, fermeture des portes, ronde toutes les 2 h','Matériel opérationnel','Arrivée 17:45 · rien à signaler'],['GAR-02','Faustin Balume','Gardien','Entrepôt logistique','Jour (06h-18h)','Registre visiteurs, inspection barrière, extincteurs','Matériel opérationnel','Arrivée 05:50 · panne d’éclairage zone Ouest'],['MGR-01','Annette Birungi','Manager','Logistique & Flotte','Optimisation CTP, 0 panne sèche sur axe','Audit carnets de bord, contrôle carburant, validation réparations','Rapport validé','Réalisation 92 % · budget pièces à revoir'],['MGR-02','Robert Kasereka','Manager','Sécurité & RH','Plan d’urgence à jour, 0 brèche','Briefing gardiens, registres de présence, ronde surprise','Rapport en cours','Réalisation 85 % · renouveler batteries radios VHF']],
+actifs:[['ACT-001','Ordinateurs','HP ProBook G9 - Neuf',5,250,'2025-02-10','Excellent',20],['ACT-002','Véhicules','Toyota Land Cruiser HZJ76',2,45000,'2024-05-15','Bon état',15],['ACT-003','Imprimantes','Canon LaserJet Pro Multi',5,400,'2025-01-20','Bon état',20],['ACT-004','Générateurs','Perkins 50 KVA - Diesel',1,12000,'2023-08-12','Usage moyen',10],['ACT-005','Tasses','Tasses personnalisées Bureau (lot)',50,5,'2026-01-05','Excellent',50],['ACT-006','Réfrigérateurs','Samsung double porte',2,950,'2024-11-02','Excellent',15],['ACT-007','Trousses','Trousses de secours d’urgence',10,45,'2025-03-18','Neuf',5]]
+};
+/* ---- état & persistance ---- */
+let db,cur='dash',q='',DL=null;
+const init=()=>{let s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+db=s&&s.t?s:{t:{},p:{res:5000,life:150000}};
+TB.forEach(T=>{if(!T.c||T.base||db.t[T.id])return;db.t[T.id]=(SD[T.id]||[]).map(a=>{const o={};let i=0;T.c.forEach(c=>{if(c[2]!=='c')o[c[0]]=a[i++]});return o})})};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
+const rows=T=>db.t[T.base||T.id];
+const $=id=>document.getElementById(id);
+const raw=(c,r)=>c[2]==='c'?c[3](r,db.t):r[c[0]];
+const badge=s=>/Échu|Critique|ALERTE|Surconso|Refus|Échéance/.test(s)?'e':/Proche|Réappro|attente|En cours|Sous-|Maintenance|Mission/i.test(s)?'w':/^(OK|Correct|Normal|Terminé|Livré|Disponible|Clôturé|Accepté|Excellent)/.test(s)?'o':'';
+const cell=(c,r)=>{const v=raw(c,r),s=f0(v,c[4]),t=c[2]||'t',b=(t==='s'||t==='c')&&typeof v==='string'&&s?badge(s):'';
+return{t:s,h:b?'<span class="b '+b+'">'+esc(s)+'</span>':esc(s),n:typeof v==='number'||t==='n'}};
+/* ---- rendu ---- */
+function render(){let g='';$('nav').innerHTML='<h1>Base logistique</h1>'+(DL?'<button onclick="A.dl(\'xlsx\')">⬇ Tout en Excel (.xlsx)</button><button onclick="A.dl(\'json\')">⬇ Sauvegarde (.json)</button>':'')+TB.map(T=>{const h=T.g!==g?'<h4>'+T.g+'</h4>':'';g=T.g;return h+'<button class="'+(T.id===cur?'on':'')+'" onclick="A.go(\''+T.id+'\')">'+T.l+'</button>'}).join('');
+$('dls').innerHTML=[['veh',db.t.flotte.map(v=>v.code)],['art',db.t.articles.map(a=>a.ref)],['p23',db.t.prod23.map(a=>a.code)],['chf',[...new Set([...db.t.flotte.map(v=>v.chf),...db.t.trajets.map(t=>t.chf)])].filter(Boolean)]].map(([k,l])=>'<datalist id="dl-'+k+'">'+l.map(x=>'<option value="'+esc(x)+'">').join('')+'</datalist>').join('');
+$('main').innerHTML=cur==='dash'?dash():tbl(TB.find(t=>t.id===cur));
+const s=document.querySelector('input[type=search]');if(s&&q){s.focus();s.setSelectionRange(q.length,q.length)}}
+function tbl(T){const R=rows(T),ql=q.toLowerCase();
+const L=R.map((r,i)=>({r,i,cs:T.c.map(c=>cell(c,r))})).filter(x=>!ql||x.cs.some(c=>c.t.toLowerCase().includes(ql)));
+const sm=T.sum||[];
+return '<h2>'+T.l+'</h2><div class="src">Source : '+T.s+' · '+L.length+' ligne(s)</div><div class="bar"><input type="search" placeholder="Rechercher…" value="'+esc(q)+'" oninput="A.q(this.value)">'+(T.ro?'':'<button class="btn p" onclick="A.add()">+ Ajouter</button>')+'<button class="btn" onclick="A.csv()">Exporter CSV</button>'+(DL?'<button class="btn p" onclick="A.dl(\'csv\')">⬇ Télécharger .csv</button>':'')+'<button class="btn" onclick="A.bk()">Sauvegarde</button></div>'
++'<div class="tw"><table><thead><tr>'+T.c.map(c=>'<th>'+esc(c[1])+'</th>').join('')+(T.ro?'':'<th></th>')+'</tr></thead><tbody>'
++L.map(x=>'<tr>'+x.cs.map(c=>'<td'+(c.n?' class="r"':'')+'>'+c.h+'</td>').join('')+(T.ro?'':'<td class="act"><button title="Modifier" onclick="A.ed('+x.i+')">✎</button><button title="Supprimer" onclick="A.rm('+x.i+')">✕</button></td>')+'</tr>').join('')
++(sm.length?'<tr class="t">'+T.c.map((c,j)=>j===0?'<td>Total</td>':sm.includes(c[0])?'<td class="r">'+f0(sumBy(L,x=>raw(c,x.r)),c[4])+'</td>':'<td></td>').join('')+(T.ro?'':'<td></td>')+'</tr>':'')
++'</tbody></table></div>'}
+const kp=(l,v,s)=>'<div class="k"><span>'+l+'</span><b>'+v+'</b>'+(s?'<small>'+s+'</small>':'')+'</div>';
+function dash(){const D=db.t,p=db.p;
+const sv=sumBy(D.articles,r=>stk(r,D)*num(r.pu)),sa=D.articles.filter(r=>stat(r,D)!=='OK');
+const bud=sumBy(D.achats,r=>num(r.qte)*num(r.pub)),rel=sumBy(D.achats,r=>num(r.qte)*num(r.pur));
+const liv=D.achats.filter(r=>r.statut==='Livré').length/(D.achats.length||1);
+const km=sumBy(D.trajets,kmp),lit=sumBy(D.carb,r=>r.lit),cc=sumBy(D.carb,r=>r.cout),kc=sumBy(D.carb,r=>r.kmd);
+const rep=sumBy(D.pannes,r=>r.cout)+sumBy(D.maint,r=>r.cout);
+const vb=sumBy(D.actifs,avb),van=vb-sumBy(D.actifs,aam);
+const al=[];
+sa.forEach(r=>al.push(['Stock',r.ref+' – '+r.des+' : stock '+f0(stk(r,D))+' (min '+f0(mini(r))+') → '+stat(r,D)]));
+D.carb.filter(r=>/Surconso|Sous-/.test(calert(r))).forEach(r=>al.push(['Carburant',r.date+' '+r.veh+' : '+f0(cons(r),1)+' L/100 km pour une norme de '+norme(r.zone)+' → '+calert(r)]));
+const last={};D.maint.forEach(m=>{if(!last[m.code]||m.date>last[m.code].date)last[m.code]=m});
+Object.values(last).filter(m=>malert(m)==='Échéance proche').forEach(m=>al.push(['Maintenance',m.code+' : prochain service à '+f0(m.prox)+', compteur à '+f0(m.cpt)]));
+D.pannes.filter(r=>r.statut!=='Clôturé').forEach(r=>al.push(['Panne',r.id+' '+r.veh+' : '+r.des+' ('+r.statut+')']));
+D.flotte.filter(v=>/Échu/.test(ech(v))).forEach(v=>al.push(['Flotte',v.code+' : entretien prévu le '+v.next+' → '+ech(v)]));
+const V=D.flotte.map(v=>{const k=sumBy(D.trajets.filter(t=>t.veh===v.code),kmp),cr=D.carb.filter(c=>c.veh===v.code),l=sumBy(cr,c=>c.lit),kk=sumBy(cr,c=>c.kmd),cf=sumBy(cr,c=>c.cout),
+rp=sumBy(D.pannes.filter(x=>x.veh===v.code),x=>x.cout)+sumBy(D.maint.filter(x=>x.code===v.code),x=>x.cout),am=k*(num(v.cout)-num(p.res))/(num(p.life)||1);
+return '<tr><td>'+esc(v.code)+'</td><td>'+esc(v.mod)+'</td><td class="r">'+f0(k)+'</td><td class="r">'+f0(l)+'</td><td class="r">'+f0(cf)+'</td><td class="r">'+f0(kk?l/kk*100:NaN,1)+'</td><td class="r">'+f0(rp)+'</td><td class="r">'+f0(am)+'</td><td class="r"><b>'+f0(cf+rp+am)+'</b></td></tr>'}).join('');
+return '<h2>Tableau de bord</h2><div class="src">Chaîne : besoin → achat → réception → stockage → sortie → flotte → maintenance → personnel → actifs</div><div class="kp">'
++kp('Valeur du stock',f0(sv)+' $',D.articles.length+' articles')+kp('Articles en alerte',sa.length,'critique ou à réapprovisionner')
++kp('Budget achats',f0(bud)+' $','réel '+f0(rel)+' $ · écart '+f0(rel-bud)+' $')+kp('Taux de livraison',f0(liv*100,0)+' %',D.achats.length+' achats')
++kp('Km parcourus',f0(km),D.trajets.length+' trajets')+kp('Carburant',f0(lit)+' L',f0(cc)+' $ · '+f0(kc?lit/kc*100:NaN,1)+' L/100 km')
++kp('Pannes & maintenance',f0(rep)+' $',D.pannes.filter(r=>r.statut!=='Clôturé').length+' panne(s) ouverte(s)')+kp('Actifs (VAN)',f0(van)+' $','achat '+f0(vb)+' $')+'</div>'
++'<h3>Coût d’exploitation par véhicule</h3><div class="tw"><table><thead><tr><th>Véhicule</th><th>Modèle</th><th>Km</th><th>Litres</th><th>Carburant ($)</th><th>L/100 km</th><th>Réparations ($)</th><th>Amort. km ($)</th><th>Total ($)</th></tr></thead><tbody>'+V+'</tbody></table></div>'
++'<div class="bar">Valeur résiduelle ($) <input type="number" style="width:100px" value="'+num(p.res)+'" onchange="A.p(\'res\',this.value)"> Durée de vie (km) <input type="number" style="width:110px" value="'+num(p.life)+'" onchange="A.p(\'life\',this.value)"></div>'
++'<h3>Alertes ('+al.length+')</h3><div class="al">'+(al.map(a=>'<div><span class="b '+(a[0]==='Panne'||a[0]==='Flotte'?'e':'w')+'">'+a[0]+'</span> '+esc(a[1])+'</div>').join('')||'<div>Aucune alerte.</div>')+'</div>'
++'<p class="note">Hypothèses : amortissement kilométrique = km × (coût initial − valeur résiduelle) ÷ durée de vie, paramètres repris de la feuille « Amortissement & Réparations » (VEH-001) et appliqués à tous les véhicules. Seuil d’alerte maintenance : 1 000 km (véhicules) ou 100 h (groupes). Dates relatives à aujourd’hui.</p>'}
+/* ---- actions ---- */
+const dlg=$('dlg');
+const dlgOpen=h=>{dlg.innerHTML=h;if(!dlg.open)dlg.showModal()};
+const curT=()=>TB.find(t=>t.id===cur);
+const A=window.A={
+go(id){cur=id;q='';render();$('main').scrollTop=0},
+q(v){q=v;render()},
+p(k,v){db.p[k]=num(v);save();render()},
+add(){A.form(null)},ed(i){A.form(i)},
+form(i){const T=curT(),r=i==null?{}:rows(T)[i];
+dlgOpen('<h3 style="margin-top:0">'+(i==null?'Ajouter':'Modifier')+' – '+T.l+'</h3><div class="g2">'+T.c.filter(c=>c[2]!=='c').map(c=>{const t=c[2]||'t',v=r[c[0]]==null?'':r[c[0]];
+const inp=t==='s'?'<select name="'+c[0]+'">'+['',...c[3]].map(o=>'<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>':'<input name="'+c[0]+'" type="'+(t==='n'?'number':t==='d'?'date':'text')+'"'+(t==='n'?' step="any"':'')+(t==='f'?' list="dl-'+c[3]+'"':'')+' value="'+esc(v)+'">';
+return '<label>'+esc(c[1])+inp+'</label>'}).join('')+'</div><div class="bar"><button class="btn p" onclick="A.ok('+(i==null?'null':i)+')">Enregistrer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
+ok(i){const T=curT(),o={};dlg.querySelectorAll('[name]').forEach(e=>{const c=T.c.find(c=>c[0]===e.name);o[e.name]=c[2]==='n'?(e.value===''?'':+e.value):e.value});
+if(i==null)rows(T).push(o);else rows(T)[i]=o;save();dlg.close();render()},
+rm(i){dlgOpen('<h3 style="margin-top:0">Supprimer cette ligne ?</h3><p>Cette action est définitive.</p><div class="bar"><button class="btn d" onclick="A.del('+i+')">Supprimer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
+del(i){rows(curT()).splice(i,1);save();dlg.close();render()},
+csv(){const T=curT(),R=rows(T),e=v=>'"'+String(v).replace(/"/g,'""')+'"';
+const t=[T.c.map(c=>e(c[1])).join(';')].concat(R.map(r=>T.c.map(c=>e(f0(raw(c,r),c[4]))).join(';'))).join('\n');
+dlgOpen('<h3 style="margin-top:0">CSV – '+T.l+'</h3><p class="note">Copiez ce texte, puis collez-le dans Excel ou un fichier .csv.</p><textarea id="tx" readonly>'+esc(t)+'</textarea><div class="bar"><button class="btn p" onclick="A.cp()">Copier</button><button class="btn" onclick="dlg.close()">Fermer</button></div>')},
+bk(){dlgOpen('<h3 style="margin-top:0">Sauvegarde de toute la base</h3><p class="note">Copiez ce JSON pour sauvegarder. Pour restaurer, collez une sauvegarde ci-dessous puis cliquez sur Restaurer.</p><textarea id="tx">'+esc(JSON.stringify(db))+'</textarea><div id="msg" class="note"></div><div class="bar"><button class="btn p" onclick="A.cp()">Copier</button><button class="btn" onclick="A.rs()">Restaurer</button><button class="btn d" onclick="A.rz()">Réinitialiser (données d’origine)</button><button class="btn" onclick="dlg.close()">Fermer</button></div>')},
+cp(){const t=$('tx');t.select();try{navigator.clipboard.writeText(t.value).catch(()=>document.execCommand('copy'))}catch(e){try{document.execCommand('copy')}catch(x){}}},
+rs(){try{const s=JSON.parse($('tx').value);if(!s.t||!s.t.flotte)throw 0;db=s;if(!db.p)db.p={res:5000,life:150000};save();dlg.close();render()}catch(e){$('msg').textContent='Sauvegarde invalide : rien n’a été modifié.'}},
+rz(){try{localStorage.removeItem(KEY)}catch(e){}init();dlg.close();render()},
+dl(k){if(!DL)return;const T=curT(),e=v=>'"'+String(v).replace(/"/g,'""')+'"';let f,d;
+if(k==='csv'){f=T.id+'.csv';d='\ufeff'+[T.c.map(c=>e(c[1])).join(';')].concat(rows(T).map(r=>T.c.map(c=>e(f0(raw(c,r),c[4]))).join(';'))).join('\r\n')}
+else if(k==='json'){f='base_logistique.json';d=JSON.stringify(db)}
+else{if(!window.XLSX)return;const wb=XLSX.utils.book_new();TB.filter(t=>t.c).forEach(t=>{const a=[t.c.map(c=>c[1])].concat(rows(t).map(r=>t.c.map(c=>{const v=raw(c,r);return typeof v==='number'&&!isFinite(v)?'':v})));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),t.l.replace(/[\\/?*\[\]:]/g,' ').slice(0,31))});f='base_logistique.xlsx';d=XLSX.write(wb,{type:'array',bookType:'xlsx'})}
+DL.save({filename:f,data:d}).catch(()=>{})}
+};
+window.dlg=dlg;init();render();
+const shim={save:o=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([o.data]));a.download=o.filename;document.body.appendChild(a);a.click();a.remove();return Promise.resolve()}};
+if(window.claude&&window.claude.use){window.claude.use('downloads').then(d=>{DL=d;if(d)render()}).catch(()=>{})}else{DL=shim;render()}
+})();
+</script></body></html>
