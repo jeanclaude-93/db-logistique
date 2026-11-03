@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Base de données logistique intégrée</title>
+<title>ERP/SUPPLY LOG</title>
 <style>
 :root{--bg:#f4f6f9;--sf:#fff;--tx:#1b2430;--mu:#657085;--bd:#dde2ea;--ac:#0b5cab;--ok:#17703d;--wa:#8a5200;--er:#a31d24;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--sf:#1a2029;--tx:#e6eaf0;--mu:#97a1b3;--bd:#2c3542;--ac:#5aa6ee;--ok:#4cc27f;--wa:#e0a040;--er:#f0777c;color-scheme:dark}}
@@ -62,6 +62,32 @@ dialog{border:0;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
 #lg{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(135deg,#0b1f3a,#2563eb 60%,#7c3aed)}#lg[hidden]{display:none}
 .lc{background:var(--sf);border-radius:18px;padding:28px;width:min(390px,100%);box-shadow:0 24px 70px rgba(0,0,0,.4)}.lc h1{margin:0 0 4px;font-size:22px}.lc label{display:block;font-size:12px;color:var(--mu);margin:12px 0}.lc input{display:block;width:100%;margin-top:4px;padding:9px 10px;color:var(--tx)}
 @media(max-width:760px){nav{width:auto}main{padding:14px}}
+
+nav{width:278px;padding:18px 12px 26px}
+nav h1{font-size:20px;letter-spacing:.01em;line-height:1.2;margin:2px 8px 2px}
+nav .sb{display:block;color:#a9c8f5;font-size:13px;margin:0 8px 14px}
+nav h4{font-size:13.5px;font-weight:700;text-transform:none;letter-spacing:0;color:#c3daff;margin:18px 4px 6px;padding:12px 6px 0;border-top:1px solid rgba(255,255,255,.16)}
+nav button{font-size:15px;font-weight:500;line-height:1.35;color:#f0f5ff;padding:9px 12px;margin:1px 0;border-left:3px solid transparent}
+nav button:hover{background:rgba(255,255,255,.15)}
+nav button.on{background:#2563eb;border-left-color:#fff;font-weight:700}
+nav button:focus-visible{outline:2px solid #fff;outline-offset:-2px}
+.me button{font-size:12.5px;font-weight:600;padding:5px 10px;margin:0;border-left:0}.me div{flex-wrap:wrap}
+.rs{padding:4px 8px;max-width:270px}
+.lw{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(320px,400px);gap:40px;align-items:center;width:min(1100px,100%);margin:auto}
+.lv h2{font-size:30px;line-height:1.2;margin:0 0 8px;color:#fff}.lv p{margin:0 0 16px;color:#b9d3fa;font-size:15px;max-width:52ch}
+.lv svg{width:100%;height:auto;display:block}
+.lchips{display:none;flex-wrap:wrap;gap:6px}.lchips span{background:rgba(255,255,255,.12);color:#eef4ff;border-radius:16px;padding:5px 11px;font-size:13px}
+#lg{background:linear-gradient(135deg,#071427,#0b2a52 55%,#14407a);overflow:auto}
+.cf{fill:none;stroke:#5aa6ee;stroke-width:3;stroke-linecap:round;stroke-dasharray:3 9;animation:fl 1.8s linear infinite}
+.cb{fill:none;stroke:#8fa6c9;stroke-width:2;stroke-linecap:round;stroke-dasharray:2 7}
+@keyframes fl{to{stroke-dashoffset:-24}}
+.nd{fill:#0f2a4d;stroke:#5aa6ee;stroke-width:2.5}.nm{fill:#0f2a4d;stroke:#8fb4ec;stroke-width:2}
+.sl{fill:#eef4ff;font-size:15px;font-weight:600;text-anchor:middle;font-family:"Segoe UI",Arial,sans-serif}.sl.s{font-size:13px;font-weight:500;fill:#b9d3fa}
+.em{text-anchor:middle;dominant-baseline:central}
+@media(prefers-reduced-motion:reduce){.cf{animation:none}}
+@media(max-width:900px){.lw{grid-template-columns:1fr;gap:22px}.lc{margin:0 auto}}
+@media(max-width:620px){.lv svg{display:none}.lchips{display:flex}.lv h2{font-size:24px}}
+@media(max-width:760px){nav{width:auto}}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></head><body>
 <div class="app"><nav id="nav"></nav><main id="main"></main></div>
 <div id="lg" hidden></div><dialog id="dlg"></dialog><div id="dls"></div>
@@ -97,7 +123,7 @@ const ech=r=>{if(!r.next)return'';const d=Math.round((new Date(r.next)-NOW)/864e
 /* ---- schéma : [clé, libellé, type(t|n|d|s|f|c), options|fn, décimales] ---- */
 const TB=[
 {id:'dash',g:'Pilotage',l:'Tableau de bord'},
-{id:'users',g:'Administration',l:'Utilisateurs & rôles'},
+{id:'users',g:'Paramètres super admin',l:'Utilisateurs & rôles'},
 {id:'req',g:'1. Besoin & achat',l:'Réquisitions (SR)',s:'Demande de Réquisition (SR)',c:[['sr','N° SR'],['date','Date','d'],['des','Désignation'],['code','Code actif / catégorie'],['u','Unité'],['qte','Qté','n'],['pu','P.U. estimé ($)','n'],['tot','Total ($)','c',r=>num(r.qte)*num(r.pu)],['just','Justification']],sum:['tot']},
 {id:'po',g:'1. Besoin & achat',l:'Bons de commande (PO)',s:'Bon de Commande (PO)',c:[['po','N° PO'],['four','Fournisseur'],['code','Code article'],['des','Désignation'],['u','Unité'],['qte','Qté','n'],['pu','P.U. ($)','n'],['tot','Total HT ($)','c',r=>num(r.qte)*num(r.pu)],['lig','Ligne budgétaire']],sum:['tot']},
 {id:'achats',g:'1. Besoin & achat',l:'Suivi des achats & budget',s:'Suivi des Achats, Tableau de Bord, Plan d’Achat',c:[['id','ID achat'],['des','Désignation'],['lieu','Lieu de livraison'],['qte','Qté','n'],['pub','P.U. budget ($)','n'],['pur','P.U. réel ($)','n'],['bud','Budget ($)','c',r=>num(r.qte)*num(r.pub)],['rel','Réel ($)','c',r=>num(r.qte)*num(r.pur)],['ec','Écart ($)','c',r=>num(r.qte)*(num(r.pur)-num(r.pub))],['statut','Statut','s',['Livré','En attente']]],sum:['bud','rel','ec']},
@@ -146,13 +172,18 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
 const rows=T=>db.t[T.base||T.id];
 const $=id=>document.getElementById(id);
 const ORD=['dash','req','po','achats','recep','articles','seuils','mvt','stock','prod23','mv23','sorties','flotte','trajets','carb','pannes','maint','pers','actifs','users'];
-const IC={'Pilotage':'📊','1. Besoin & achat':'🛒','2. Réception':'📥','3. Stockage':'🏬','4. Sortie des biens':'📤','5. Flotte, km & carburant':'🚚','6. Pannes & maintenance':'🔧','7. Personnel':'👥','8. Actifs':'🏢','Administration':'🔐'};
+const IC={'Pilotage':'📊','1. Besoin & achat':'🛒','2. Réception':'📥','3. Stockage':'🏬','4. Sortie des biens':'📤','5. Flotte, km & carburant':'🚚','6. Pannes & maintenance':'🔧','7. Personnel':'👥','8. Actifs':'🏢','Paramètres super admin':'🔐'};
 const ROLES={super_admin:{l:'Super admin',p:{'*':'d'}},
 procurement:{l:'Procurement officer',p:{dash:'r',req:'d',po:'d',achats:'d',recep:'w',articles:'r',seuils:'r',stock:'r',sorties:'r',actifs:'r'}},
 supply:{l:'Supply chain assistant (achats & commandes)',p:{dash:'r',req:'w',po:'w',achats:'w',recep:'r',articles:'r',stock:'r'}},
 magasinier:{l:'Magasinier',p:{dash:'r',req:'r',po:'r',recep:'w',articles:'d',seuils:'w',mvt:'d',stock:'r',prod23:'w',mv23:'w',sorties:'w'}},
 assistant:{l:'Assistant logistique',p:{dash:'r',req:'w',po:'r',achats:'r',recep:'w',articles:'r',seuils:'r',mvt:'w',stock:'r',sorties:'w',flotte:'r',trajets:'w',carb:'w',pannes:'r',maint:'r',actifs:'r'}},
-fleet:{l:'Fleet officer (flotte)',p:{dash:'r',sorties:'r',flotte:'d',trajets:'d',carb:'d',pannes:'d',maint:'d',pers:'w',actifs:'r'}}};
+fleet:{l:'Fleet officer (flotte)',p:{dash:'r',sorties:'r',flotte:'d',trajets:'d',carb:'d',pannes:'d',maint:'d',pers:'w',actifs:'r'}},
+finance:{l:'Finance Officer',p:{dash:'r',req:'r',po:'r',achats:'w',recep:'r',stock:'r',sorties:'r',trajets:'r',carb:'r',maint:'r',actifs:'r'}},
+logmgr:{l:'Log Manager',p:Object.fromEntries(ORD.filter(i=>i!=='users').map(i=>[i,'d']))},
+projmgr:{l:'Project Manager',p:{dash:'r',req:'w',po:'r',recep:'r',stock:'r',sorties:'r',trajets:'r',actifs:'r'}},
+procmgr:{l:'Procurement Manager',p:{dash:'r',req:'d',po:'d',achats:'d',recep:'r',articles:'r',seuils:'r',stock:'r',sorties:'r',actifs:'r'}},
+hr:{l:'HR officer',p:{dash:'r',pers:'d',actifs:'r'}}};
 const LV={r:'lecture',w:'saisie',d:'saisie + suppression'};
 let me=null;const SU='niyomagugujc05@gmail.com';
 const SEEDU={email:SU,nom:'Jean-Claude Niyonsenga Magugu',role:'super_admin',salt:'lgsu-7f3a9c12',hash:'d4a0d455bb998ca8e946390e2bf17f4c71614216ccf94d823e174159b05d26e9'};
@@ -163,17 +194,30 @@ const hx=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('
 const hsh=async(pw,salt)=>{const te=new TextEncoder(),k=await crypto.subtle.importKey('raw',te.encode(pw),'PBKDF2',false,['deriveBits']);return hx(await crypto.subtle.deriveBits({name:'PBKDF2',salt:te.encode(salt),iterations:100000,hash:'SHA-256'},k,256))};
 const rnd=()=>hx(crypto.getRandomValues(new Uint8Array(8)));
 const fld=(id,l,t)=>'<label>'+l+'<input id="'+id+'" type="'+(t||'text')+'"></label>';
-const rsel=v=>'<label>Rôle<select id="ur">'+Object.keys(ROLES).map(k=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+ROLES[k].l+'</option>').join('')+'</select></label>';
+const rsel=v=>'<label>Rôle (à changer en cas de changement de poste)<select id="ur">'+Object.keys(ROLES).map(k=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+ROLES[k].l+'</option>').join('')+'</select></label>';
 const flow=()=>'<div class="flow">'+[...new Set(TB.filter(t=>t.c&&vis(t.id)).map(t=>t.g))].map(g=>{const t=TB.find(x=>x.g===g&&x.c&&vis(x.id));return '<a onclick="A.go(\''+t.id+'\')">'+(IC[g]||'')+' '+g+'</a>'}).join('')+'</div>';
-const showLogin=()=>{const l=$('lg');l.hidden=false;l.innerHTML='<div class="lc"><h1>📦 Base logistique</h1><p class="note">Connectez-vous pour accéder à la base de données.</p><label>E-mail<input id="le" type="email" autocomplete="username" onkeydown="if(event.key===\'Enter\')A.login()"></label><label>Mot de passe<input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')A.login()"></label><div id="lm" class="note"></div><button class="btn p" style="width:100%" onclick="A.login()">Se connecter</button></div>'};
+const circuit=()=>{const N=(x,y,e,t,o={})=>{const r=o.r||30,ls=[].concat(t),ly=o.ly!=null?o.ly:y+r+20;
+const lab=o.side?'<text class="sl" x="'+(x+o.side*(r+10))+'" y="'+y+'" style="text-anchor:'+(o.side<0?'end':'start')+';dominant-baseline:central">'+ls[0]+'</text>':'<text class="sl" x="'+x+'" y="'+ly+'">'+ls.map((z,i)=>'<tspan x="'+x+'" dy="'+(i?17:0)+'">'+z+'</tspan>').join('')+'</text>';
+return '<circle class="'+(o.m?'nm':'nd')+'" cx="'+x+'" cy="'+y+'" r="'+r+'"/><text class="em" x="'+x+'" y="'+y+'" style="font-size:'+(o.m?20:26)+'px">'+e+'</text>'+lab};
+const P=d=>'<path class="cf" d="'+d+'"/>';
+return '<svg viewBox="0 0 670 470" role="img" aria-label="Circuit logistique : réquisition, commande, transport aérien, route et maritime, réception, entreposage, distribution aux programmes, documentation et reporting">'+
+'<path class="cb" d="M270,390H60Q25,390 25,355V105Q25,70 60,70H90"/>'+
+P('M90,70H450')+P('M450,70Q350,70 350,150Q350,250 450,250')+P('M450,70V250')+P('M450,70Q550,70 550,150Q550,250 450,250')+P('M450,250H90')+P('M90,250Q90,390 270,390')+
+N(90,70,'📋','Réquisition')+N(270,70,'🛒','Commande')+N(450,70,'📦','Transport',{ly:30})+
+N(350,150,'✈️','Aérien',{r:20,m:1,side:-1})+N(450,150,'🚚','Route',{r:20,m:1,side:1})+N(550,150,'🚢','Maritime',{r:20,m:1,side:1})+
+N(450,250,'📥','Réception')+N(270,250,'🏬','Entreposage')+N(90,250,'📤',['Distribution','aux programmes'],{ly:192})+
+N(270,390,'📊',['Documentation','& reporting'])+
+'<text class="sl s" x="330" y="395" style="text-anchor:start">Le reporting alimente les prochaines réquisitions</text></svg>'};
+const STEPS=['Réquisition','Commande','Transport (aérien · route · maritime)','Réception','Entreposage','Distribution aux programmes','Documentation & reporting'];
+const showLogin=()=>{const l=$('lg');l.hidden=false;l.innerHTML=`<div class="lw"><div class="lv"><h2>Du besoin à la distribution, un seul circuit.</h2><p>Suivez chaque étape de la chaîne logistique, de la réquisition jusqu’au reporting.</p>`+circuit()+`<div class="lchips">`+STEPS.map(x=>'<span>'+x+'</span>').join('')+`</div></div><div class="lc"><h1>ERP/SUPPLY LOG</h1><p class="note" style="margin-top:0">Connectez-vous pour accéder à la base de données.</p><label>E-mail<input id="le" type="email" autocomplete="username" onkeydown="if(event.key==='Enter')A.login()"></label><label>Mot de passe<input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')A.login()"></label><div id="lm" class="note"></div><button class="btn p" style="width:100%" onclick="A.login()">Se connecter</button></div></div>`};
 const boot=()=>{db.users=db.users||[];if(!db.users.some(u=>u.email===SU))db.users.unshift(Object.assign({},SEEDU));save();let s=null;try{s=sessionStorage.getItem('logdb-sess')}catch(e){}const u=db.users.find(x=>x.email===s);if(u){me=u;render()}else showLogin()};
-function usersView(){return '<h2>Utilisateurs & rôles</h2><div class="src">Accès réservé au super admin</div><div class="bar"><button class="btn p" onclick="A.nu()">+ Nouvel utilisateur</button></div><div class="tw"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th></th></tr></thead><tbody>'+db.users.map((u,i)=>'<tr><td>'+esc(u.nom)+'</td><td>'+esc(u.email)+'</td><td><span class="b o">'+ROLES[u.role].l+'</span></td><td class="act"><button title="Modifier" onclick="A.eu('+i+')">✎</button>'+(u.email===SU?'':'<button title="Supprimer" onclick="A.du('+i+')">✕</button>')+'</td></tr>').join('')+'</tbody></table></div><h3>Droits par rôle</h3><div class="al">'+Object.keys(ROLES).filter(k=>k!=='super_admin').map(k=>'<div><b>'+ROLES[k].l+'</b><br>'+TB.filter(t=>ROLES[k].p[t.id]).map(t=>esc(t.l)+' <small>('+LV[ROLES[k].p[t.id]]+')</small>').join(' · ')+'</div>').join('')+'<div><b>Super admin</b><br>Accès total, gestion des utilisateurs, sauvegarde et restauration</div></div>'}
+function usersView(){return '<h2>Utilisateurs & rôles</h2><div class="src">Accès réservé au super admin · en cas de changement de poste, modifiez le rôle directement dans la colonne Rôle</div><div class="bar"><button class="btn p" onclick="A.nu()">+ Nouvel utilisateur</button></div><div class="tw"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th></th></tr></thead><tbody>'+db.users.map((u,i)=>'<tr><td>'+esc(u.nom)+'</td><td>'+esc(u.email)+'</td><td>'+(u.email===SU?'<span class="b o">'+ROLES[u.role].l+'</span>':'<select class="rs" title="Changer le rôle" onchange="A.rl('+i+',this.value)">'+Object.keys(ROLES).filter(k=>k!=='super_admin').map(k=>'<option value="'+k+'"'+(k===u.role?' selected':'')+'>'+ROLES[k].l+'</option>').join('')+'</select>')+'</td><td class="act"><button title="Modifier (rôle, mot de passe)" onclick="A.eu('+i+')">✎</button>'+(u.email===SU?'':'<button title="Supprimer" onclick="A.du('+i+')">✕</button>')+'</td></tr>').join('')+'</tbody></table></div><h3>Droits par rôle</h3><div class="al">'+Object.keys(ROLES).filter(k=>k!=='super_admin').map(k=>'<div><b>'+ROLES[k].l+'</b><br>'+TB.filter(t=>ROLES[k].p[t.id]).map(t=>esc(t.l)+' <small>('+LV[ROLES[k].p[t.id]]+')</small>').join(' · ')+'</div>').join('')+'<div><b>Super admin</b><br>Accès total, gestion des utilisateurs, sauvegarde et restauration</div></div>'}
 const raw=(c,r)=>c[2]==='c'?c[3](r,db.t):r[c[0]];
 const badge=s=>/Échu|Critique|ALERTE|Surconso|Refus|Échéance/.test(s)?'e':/Proche|Réappro|attente|En cours|Sous-|Maintenance|Mission/i.test(s)?'w':/^(OK|Correct|Normal|Terminé|Livré|Disponible|Clôturé|Accepté|Excellent)/.test(s)?'o':'';
 const cell=(c,r)=>{const v=raw(c,r),s=f0(v,c[4]),t=c[2]||'t',b=(t==='s'||t==='c')&&typeof v==='string'&&s?badge(s):'';
 return{t:s,h:b?'<span class="b '+b+'">'+esc(s)+'</span>':esc(s),n:typeof v==='number'||t==='n'}};
 /* ---- rendu ---- */
-function render(){if(!me)return;let g='';$('nav').innerHTML='<h1>📦 Base logistique</h1><div class="me"><b>'+esc(me.nom)+'</b><small>'+ROLES[me.role].l+'</small><div><button onclick="A.pw()">Mot de passe</button><button onclick="A.out()">Quitter</button></div></div>'+(DL?'<button onclick="A.dl(\'xlsx\')">⬇ Tout en Excel (.xlsx)</button>'+(me.role==='super_admin'?'<button onclick="A.dl(\'json\')">⬇ Sauvegarde (.json)</button>':'')+'':'')+TB.filter(T=>vis(T.id)).map(T=>{const h=T.g!==g?'<h4>'+(IC[T.g]||'')+' '+T.g+'</h4>':'';g=T.g;return h+'<button class="'+(T.id===cur?'on':'')+'" onclick="A.go(\''+T.id+'\')">'+T.l+'</button>'}).join('');
+function render(){if(!me)return;let g='';$('nav').innerHTML='<h1>ERP/SUPPLY LOG</h1><span class="sb">Base de données logistique</span><div class="me"><b>'+esc(me.nom)+'</b><small>'+ROLES[me.role].l+'</small><div><button onclick="A.pw()">Mot de passe</button><button onclick="A.out()">Déconnexion</button></div></div>'+TB.filter(T=>vis(T.id)).map(T=>{const h=T.g!==g?'<h4>'+(IC[T.g]||'')+' '+T.g+'</h4>':'';g=T.g;return h+'<button class="'+(T.id===cur?'on':'')+'" onclick="A.go(\''+T.id+'\')">'+T.l+'</button>'}).join('')+(me.role==='super_admin'?(DL?'<button class="adm" onclick="A.dl(\'xlsx\')">⬇ Tout en Excel (.xlsx)</button><button class="adm" onclick="A.dl(\'json\')">⬇ Sauvegarde (.json)</button>':'')+'<button class="adm" onclick="A.bk()">Sauvegarde / restauration</button>':'');
 $('dls').innerHTML=[['veh',db.t.flotte.map(v=>v.code)],['art',db.t.articles.map(a=>a.ref)],['p23',db.t.prod23.map(a=>a.code)],['chf',[...new Set([...db.t.flotte.map(v=>v.chf),...db.t.trajets.map(t=>t.chf)])].filter(Boolean)]].map(([k,l])=>'<datalist id="dl-'+k+'">'+l.map(x=>'<option value="'+esc(x)+'">').join('')+'</datalist>').join('');
 $('main').innerHTML=cur==='dash'?dash():cur==='users'?usersView():tbl(TB.find(t=>t.id===cur));
 const s=document.querySelector('input[type=search]');if(s&&q){s.focus();s.setSelectionRange(q.length,q.length)}}
@@ -245,11 +289,12 @@ async su(){if(me.role!=='super_admin')return;const n=$('un').value.trim(),e=$('u
 const s=rnd();db.users.push({email:e,nom:n,role:$('ur').value,salt:s,hash:await hsh(p,s)});save();dlg.close();render()},
 eu(i){const u=db.users[i];dlgOpen('<h3 style="margin-top:0">Modifier – '+esc(u.nom)+'</h3>'+(u.email===SU?'<p class="note">Le rôle du super admin est fixe.</p>':rsel(u.role))+fld('up','Nouveau mot de passe (vide = inchangé)','password')+'<div id="msg" class="note"></div><div class="bar"><button class="btn p" onclick="A.se('+i+')">Enregistrer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
 async se(i){if(me.role!=='super_admin')return;const u=db.users[i],p=$('up').value;if(p&&p.length<8){$('msg').textContent='8 caractères minimum.';return}if(u.email!==SU)u.role=$('ur').value;if(p){u.salt=rnd();u.hash=await hsh(p,u.salt)}save();dlg.close();render()},
+rl(i,v){if(me.role!=='super_admin')return;const u=db.users[i];if(!u||u.email===SU||!ROLES[v]||v==='super_admin')return;u.role=v;save();render()},
 du(i){dlgOpen('<h3 style="margin-top:0">Supprimer cet utilisateur ?</h3><div class="bar"><button class="btn d" onclick="A.dx('+i+')">Supprimer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
 dx(i){const u=db.users[i];if(me.role==='super_admin'&&u&&u.email!==SU&&u!==me){db.users.splice(i,1);save()}dlg.close();render()},
 pw(){dlgOpen('<h3 style="margin-top:0">Changer mon mot de passe</h3>'+fld('po','Mot de passe actuel','password')+fld('up','Nouveau mot de passe (8 caractères min.)','password')+'<div id="msg" class="note"></div><div class="bar"><button class="btn p" onclick="A.sp()">Enregistrer</button><button class="btn" onclick="dlg.close()">Annuler</button></div>')},
 async sp(){const m=$('msg');if(await hsh($('po').value,me.salt)!==me.hash){m.textContent='Mot de passe actuel incorrect.';return}if($('up').value.length<8){m.textContent='8 caractères minimum.';return}me.salt=rnd();me.hash=await hsh($('up').value,me.salt);save();dlg.close()},
-dl(k){if(!DL)return;const T=curT(),e=v=>'"'+String(v).replace(/"/g,'""')+'"';let f,d;
+dl(k){if(!DL)return;if(k!=='csv'&&me.role!=='super_admin')return;const T=curT(),e=v=>'"'+String(v).replace(/"/g,'""')+'"';let f,d;
 if(k==='csv'){f=T.id+'.csv';d='\ufeff'+[T.c.map(c=>e(c[1])).join(';')].concat(rows(T).map(r=>T.c.map(c=>e(f0(raw(c,r),c[4]))).join(';'))).join('\r\n')}
 else if(k==='json'){f='base_logistique.json';d=JSON.stringify(db)}
 else{if(!window.XLSX)return;const wb=XLSX.utils.book_new();TB.filter(t=>t.c&&lv(t.id)).forEach(t=>{const a=[t.c.map(c=>c[1])].concat(rows(t).map(r=>t.c.map(c=>{const v=raw(c,r);return typeof v==='number'&&!isFinite(v)?'':v})));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),t.l.replace(/[\\/?*\[\]:]/g,' ').slice(0,31))});f='base_logistique.xlsx';d=XLSX.write(wb,{type:'array',bookType:'xlsx'})}
