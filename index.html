@@ -121,6 +121,7 @@ h3.sec{font-size:17px;margin:22px 0 4px}
 .ph>div{flex:1;min-width:0}.ph h2{margin:0;font-size:22px}.ph .src{margin:2px 0 0}
 .rp{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;background:var(--sf);border-radius:var(--rad);box-shadow:var(--sh);padding:10px 14px;margin:0 0 12px}
 .rp label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mu)}.rp .sp{flex:1}
+input.ei{width:84px;text-align:right;padding:4px 6px;border-color:var(--ac);background:rgba(37,99,235,.06)}
 @media print{nav,.bar,.rp,.tabs{display:none}}
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}.tabs button{border:1px solid var(--bd);background:var(--sf);color:var(--tx);border-radius:20px;padding:8px 16px;cursor:pointer;font:inherit;font-weight:600;box-shadow:var(--sh)}.tabs button.on{background:var(--ac);border-color:var(--ac);color:#fff}
 
@@ -139,7 +140,7 @@ const addDays=n=>{const d=new Date(NOW);d.setDate(d.getDate()+n);return d.toISOS
 const yr=d=>+String(d).slice(0,4)||YR;
 /* ---- moteur de calcul : classes typées (structure Java/C++), règles reprises des classeurs d’origine ---- */
 class Stock{
-static mouv(D,ref,t){return sumBy(D.mvt.filter(m=>m.ref===ref&&m.type===t),m=>m.qte)}
+static mouv(D,ref,t){return sumBy(D.mvt.filter(m=>m.ref===ref&&m.type===t),m=>m.qte)+(t==='Entrée'?sumBy(D.recep.filter(x=>x.ref===ref),x=>x.rec):sumBy(D.sorties.filter(x=>x.ref===ref),x=>x.qte))}
 static niveau(r,D){return Stock.mouv(D,r.ref,'Entrée')-Stock.mouv(D,r.ref,'Sortie')}
 static minimum(r){return num(r.cjm)*num(r.dl)+num(r.ss)}
 static statut(r,D){const s=Stock.niveau(r,D);return s<=num(r.ss)?'Critique':s<=Stock.minimum(r)?'Réappro':'OK'}
@@ -190,14 +191,15 @@ const TB=[
 const lu=k=>(r,D)=>(D.articles.find(a=>a.ref===r.ref)||{})[k]||'';
 const mvR=t=>()=>db.t.mvt.map((m,i)=>Object.assign({},m,{_i:i})).filter(m=>m.type===t);
 const nOK=()=>db.t.articles.filter(r=>stat(r,db.t)!=='OK');
+const pct=r=>mini(r)>0?stk(r,db.t)/mini(r):0;
 const aqc=(r,D)=>Math.max(0,mini(r)-stk(r,D));
 const GS=[
 {id:'gs_in',perm:'gs',g:'3. Stockage',l:'Entrées de stock',s:'Gestion des Stocks – bloc ENTRÉE',base:'mvt',fix:{type:'Entrée'},rf:mvR('Entrée'),c:[['date','Date','d'],['ref','Référence','f','art'],['des','Description','c',lu('des')],['u','Unité','c',lu('u')],['qte','Qté entrée','n']],sum:['qte']},
 {id:'gs_out',perm:'gs',g:'3. Stockage',l:'Sorties de stock',s:'Gestion des Stocks – bloc SORTIE',base:'mvt',fix:{type:'Sortie'},rf:mvR('Sortie'),c:[['date','Date','d'],['ref','Référence','f','art'],['des','Description','c',lu('des')],['u','Unité','c',lu('u')],['qte','Qté sortie','n']],sum:['qte']},
 {id:'gs_inv',perm:'gs',g:'3. Stockage',l:'Inventaire',ro:1,s:'Stock actuel = Σ entrées − Σ sorties',rf:()=>db.t.articles,c:[['ref','Référence'],['des','Description'],['u','Unité'],['ent','Entrées','c',(r,D)=>mv(D,r.ref,'Entrée')],['sor','Sorties','c',(r,D)=>mv(D,r.ref,'Sortie')],['stk','Stock actuel','c',stk],['pu','P.U. ($)','n'],['val','Valeur ($)','c',(r,D)=>stk(r,D)*num(r.pu)]],sum:['val']},
-{id:'gs_al',perm:'gs',g:'3. Stockage',l:'Alertes de stock',ro:1,s:'Stock minimum = conso. jour. moy. × délai + stock de sécurité ; statut Critique si stock ≤ sécurité, Réappro si ≤ minimum',rf:nOK,c:[['ref','Référence'],['des','Description'],['u','Unité'],['stk','Stock actuel','c',stk],['cjm','Conso jour. moy.','n'],['dl','Délai livr. (j)','n'],['ss','Stock sécurité','n'],['min','Stock minimum','c',r=>mini(r)],['pa','% alerte (stock ÷ minimum)','c',(r,D)=>mini(r)>0?stk(r,D)/mini(r)*100:0,0],['st','Statut','c',stat]]},
+{id:'gs_al',perm:'gs',g:'3. Stockage',l:'Alertes de stock',ro:1,s:'tous les articles, du plus critique au moins critique. Modifiez les colonnes ✎ : stock minimum, % alerte, statut, plan d’appro et tableau de bord se recalculent. Stock minimum = conso. par jour × délai + stock de sécurité ; Critique si stock ≤ sécurité, Réappro si ≤ minimum',cnt:nOK,rf:()=>db.t.articles.slice().sort((a,b)=>pct(a)-pct(b)),c:[['ref','Référence'],['des','Description'],['u','Unité'],['stk','Stock actuel','c',stk],['cjm','Conso. par jour ✎','e'],['dl','Délai livr. (j) ✎','e'],['ss','Stock sécurité ✎','e'],['min','Stock minimum','c',r=>mini(r)],['pa','% alerte (stock ÷ minimum)','c',(r,D)=>mini(r)>0?stk(r,D)/mini(r)*100:0,0],['st','Statut','c',stat]]},
 {id:'gs_plan',perm:'gs',g:'3. Stockage',l:'Plan d’approvisionnement',ro:1,s:'Date de réappro. estimée = aujourd’hui + délai de livraison, pour les articles non « OK »',rf:nOK,c:[['ref','Référence'],['des','Description'],['u','Unité'],['stk','Stock actuel','c',stk],['min','Stock minimum','c',r=>mini(r)],['st','Statut','c',stat],['dl','Délai livr. (j)','n'],['rea','Date réappro. estimée','c',r=>addDays(num(r.dl))],['qc','Qté à commander (min − stock)','c',aqc],['pu','P.U. ($)','n'],['cout','Coût estimé ($)','c',(r,D)=>aqc(r,D)*num(r.pu)]],sum:['cout']}];
-const gsT=()=>'<div class="tabs">'+[['gs_in','⬇️ Entrées'],['gs_out','⬆️ Sorties'],['gs_inv','📦 Inventaire'],['gs_al','⚠️ Alertes'],['gs_plan','🗓️ Plan d’approvisionnement']].map(([v,l])=>'<button class="'+(v===GT?'on':'')+'" onclick="A.gt(\''+v+'\')">'+l+' ('+GS.find(t=>t.id===v).rf().length+')</button>').join('')+'</div>';
+const gsT=()=>'<div class="tabs">'+[['gs_in','⬇️ Entrées'],['gs_out','⬆️ Sorties'],['gs_inv','📦 Inventaire'],['gs_al','⚠️ Alertes'],['gs_plan','🗓️ Plan d’approvisionnement']].map(([v,l])=>'<button class="'+(v===GT?'on':'')+'" onclick="A.gt(\''+v+'\')">'+l+' ('+(g=>(g.cnt||g.rf)().length)(GS.find(t=>t.id===v))+')</button>').join('')+'</div>';
 /* ---- données d’origine (lignes = colonnes non calculées, dans l’ordre) ---- */
 const SD={prod23:[['0000672','Produit A',18,10,7.4],['0000673','Produit B',10,8.8,8.8],['0000674','Produit C',25,5.45,5.45],['0000675','Produit D',5,14.9,14.9],['0000676','Produit E',10,9.55,9.55],['0000677','Produit F',10,7.85,7.85],['0000678','Produit G',5,12.7,12.7],['0000679','Produit H',30,4.9,4.9],['0000680','Produit I',25,10.15,10.15],['0000681','Produit J',25,11.75,11.75],['0000682','Produit K',50,8.95,8.95]],
 mv23:[['2023-01-30','0000673','Sortie',3],['2023-01-30','0000672','Entrée',4],['2023-01-31','0000672','Entrée',2],['2023-01-31','0000672','Sortie',12],['2023-01-31','0000673','Entrée',10],['2023-01-31','0000678','Entrée',5],['2023-01-31','0000680','Entrée',10]],
@@ -271,7 +273,7 @@ return `<h2>Utilisateurs & rôles</h2><div class="src">Accès réservé au super
 const raw=(c,r)=>c[2]==='c'?c[3](r,db.t):r[c[0]];
 const badge=s=>/Échu|Critique|ALERTE|Surconso|Refus|Échéance/.test(s)?'e':/Proche|Réappro|attente|En cours|Sous-|Maintenance|Mission/i.test(s)?'w':/^(OK|Correct|Normal|Terminé|Livré|Disponible|Clôturé|Accepté|Excellent)/.test(s)?'o':'';
 const cell=(c,r)=>{const v=raw(c,r),s=f0(v,c[4]),t=c[2]||'t',b=(t==='s'||t==='c')&&typeof v==='string'&&s?badge(s):'';
-return{t:s,h:b?'<span class="b '+b+'">'+esc(s)+'</span>':esc(s),n:typeof v==='number'||t==='n'}};
+return{t:s,h:t==='e'&&can('gs','w')?'<input class="ei" type="number" step="any" min="0" value="'+esc(v)+'" data-r="'+esc(r.ref)+'" data-f="'+c[0]+'" onchange="A.ie(this)">':b?'<span class="b '+b+'">'+esc(s)+'</span>':esc(s),n:typeof v==='number'||t==='n'||t==='e'}};
 /* ---- rendu ---- */
 function render(){if(!me)return;let g='';$('nav').innerHTML='<h1>ERP/SUPPLY LOG</h1><span class="sb">Base de données logistique</span><div class="me"><b>'+esc(me.nom)+'</b><small>'+ROLES[me.role].l+'</small><div><button onclick="A.pw()">Mot de passe</button><button onclick="A.out()">Déconnexion</button></div></div>'+TB.filter(T=>vis(T.id)).map(T=>{const h=T.g!==g?'<h4>'+(IC[T.g]||'')+' '+T.g+'</h4>':'';g=T.g;return h+'<button class="'+(T.id===cur?'on':'')+'" onclick="A.go(\''+T.id+'\')"><i>'+(NI[T.id]||'•')+'</i><span>'+T.l+'</span></button>'}).join('')+(me.role==='super_admin'?(DL?'<button class="adm" onclick="A.dl(\'xlsx\')">⬇ Tout en Excel (.xlsx)</button><button class="adm" onclick="A.dl(\'json\')">⬇ Sauvegarde (.json)</button>':'')+'<button class="adm" onclick="A.mc()"><i>✉️</i><span>Envoi des e-mails (EmailJS)</span></button><button class="adm" onclick="A.bk()">Sauvegarde / restauration</button>':'');
 $('dls').innerHTML=[['veh',db.t.flotte.map(v=>v.code)],['art',db.t.articles.map(a=>a.ref)],['p23',db.t.prod23.map(a=>a.code)],['act',db.t.actifs.map(a=>a.id)],['chf',[...new Set([...db.t.flotte.map(v=>v.chf),...db.t.trajets.map(t=>t.chf)])].filter(Boolean)]].map(([k,l])=>'<datalist id="dl-'+k+'">'+l.map(x=>'<option value="'+esc(x)+'">').join('')+'</datalist>').join('');
@@ -347,6 +349,7 @@ sr(){if(me.role!=='super_admin')return;const n=$('rn').value.trim(),m=$('msg');i
 const p={};dlg.querySelectorAll('[data-m]').forEach(e=>{if(e.value)p[e.dataset.m]=e.value});if(!p.dash)p.dash='r';const k='c_'+rnd().slice(0,6);db.roles=db.roles||{};db.roles[k]={l:n,p};ROLES[k]=db.roles[k];save();dlg.close();render()},
 dr(k){if(me.role!=='super_admin'||!(db.roles&&db.roles[k]))return;const n=db.users.filter(u=>u.role===k).length;if(n){dlgOpen('<h3 style="margin-top:0">Rôle utilisé</h3><p>'+n+' utilisateur(s) ont ce rôle. Changez d’abord leur rôle, puis supprimez-le.</p><div class="bar"><button class="btn" onclick="dlg.close()">Fermer</button></div>');return}delete db.roles[k];delete ROLES[k];save();render()},
 pt(v){PT=v;render()},
+ie(el){const a=db.t.articles.find(x=>x.ref===el.dataset.r);if(!a||!can('gs','w'))return;a[el.dataset.f]=el.value===''?'':Math.max(0,+el.value);save();render()},
 gt(v){GT=v;DF={f:'',t:'',c:''};q='';render()},
 df(k,v){if(k==='r'){DF.f=DF.t=''}else DF[k]=v;render()},
 rep(k){if(!DL)return;const T=eff(curT());if(!T||!T.c)return;const{L}=sel(T),sm=T.sum||[],per=DF.f||DF.t,p=per?'Période du '+(DF.f||'début')+' au '+(DF.t||'jour')+'':'Toutes les dates',nm=T.id+(T.id==='pers'?'_'+PT.toLowerCase():'')+'_'+(per?(DF.f||'debut')+'_'+(DF.t||'fin'):addDays(0)),
